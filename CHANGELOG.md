@@ -1,5 +1,55 @@
 # Changelog
 
+## Phase 13 — Export (2026-09-04)
+
+The counterpart to Phase 12: download the current plan as CSV or XLSX
+instead of only bulk-loading into it.
+
+**Backend**
+- `app/services/export_data.py` builds export rows straight from live
+  Activity/Milestone data, resolving `owner_team`/`owner_user`/
+  `contributors`/tags to names (never raw ids) via the same lookups
+  Phase 12's import already relies on.
+- `GET /export/activities.csv` writes activities using **exactly** the
+  same header row as `/import/activities/preview` expects
+  (`app.services.import_activities.EXPECTED_COLUMNS`, imported directly
+  rather than duplicated) — the file this endpoint produces can be
+  edited and fed straight back into import with zero errors. Multi-value
+  fields (contributors, tags) are comma-joined; the CSV writer's own
+  quoting handles the resulting embedded commas correctly.
+- `GET /export/plan.xlsx` produces a two-sheet workbook — "Activities"
+  (same layout as the CSV) and "Milestones" (title, description, date,
+  status, team, owner, tags) — since a milestone has no natural home in
+  the activity-shaped CSV format.
+- 5 new tests (100/100 total): CSV header correctness, resolved-name
+  content, empty-project export (header only, not an error), a
+  round-trip test that exports then re-imports the same file through
+  `/import/activities/preview` and asserts zero errors, and an XLSX test
+  that reads both sheets back with `openpyxl` and checks their headers
+  and data.
+
+**Frontend**
+- Admin > Import / Export gained an "Export" section above the existing
+  import UI: two plain download links (`Export activities (CSV)`,
+  `Export full plan (XLSX)`) — no client-side state needed, since these
+  are simple `GET` downloads rather than a preview/apply flow.
+
+**Verified:** 100/100 backend tests pass, frontend type-checks clean.
+Checked end-to-end against the live seed data: exported the CSV via a
+direct request, confirmed it round-trips through `/import/activities/
+preview` with `valid_count: 9, error_count: 0` on all nine seeded
+activities (including multi-value contributor/tag fields quoted
+correctly), and exported the XLSX and confirmed both sheets and their
+headers via the response's content-type/disposition headers and byte
+size. Checked in a browser that both export links and the existing
+import controls render correctly side by side on the same page.
+
+**Not yet implemented:** PDF export and print-friendly views (not
+requested by the master spec for v0.1); export currently covers the
+same entity scope as import (activities primarily, milestones added to
+the XLSX only) — extending either to dependencies or calendar events is
+additive, following the same pattern.
+
 ## Phase 12 — Import CSV/Excel (2026-09-04)
 
 Bulk-create activities from a spreadsheet, following the same

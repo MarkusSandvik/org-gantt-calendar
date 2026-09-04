@@ -132,6 +132,29 @@ export function ImportExportAdmin() {
 
   return (
     <div>
+      <h2>Export</h2>
+      <p className="page__phase-note">
+        Download the current plan. The activities CSV uses the same column
+        layout as import, so it can be edited and re-imported unchanged.
+      </p>
+      <div className="toolbar">
+        <a
+          className="button"
+          href={`/api/v1/export/activities.csv?project_id=${projectId}`}
+          download="activities_export.csv"
+        >
+          Export activities (CSV)
+        </a>
+        <a
+          className="button"
+          href={`/api/v1/export/plan.xlsx?project_id=${projectId}`}
+          download="plan_export.xlsx"
+        >
+          Export full plan (XLSX)
+        </a>
+      </div>
+
+      <h2>Import</h2>
       <p className="page__phase-note">
         Bulk-create activities from a CSV or XLSX file. Nothing is written to
         the plan until you review the preview below and confirm the import.

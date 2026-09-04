@@ -74,8 +74,8 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 12 (import CSV/Excel) is complete. See
-`CHANGELOG.md` for phase-by-phase progress.
+v0.1 in progress — Phase 13 (export) is complete. See `CHANGELOG.md` for
+phase-by-phase progress.
 
 ## Mocked authentication
 
