@@ -309,3 +309,31 @@ export interface ActivityWritePayload {
   tag_ids: number[];
   reason?: string;
 }
+
+export interface ImportRowResult {
+  row_number: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  priority: string;
+  progress_percent: string;
+  owner_team: string;
+  owner_user: string;
+  contributors: string;
+  tags: string;
+  errors: string[];
+  activity_id: number | null;
+}
+
+export interface ImportPreviewResponse {
+  rows: ImportRowResult[];
+  valid_count: number;
+  error_count: number;
+}
+
+export interface ImportApplyResponse {
+  created_count: number;
+  skipped_count: number;
+  rows: ImportRowResult[];
+}

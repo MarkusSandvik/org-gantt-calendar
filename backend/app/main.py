@@ -10,6 +10,7 @@ from app.routers import (
     dashboard,
     dependencies,
     health,
+    import_export,
     milestones,
     projects,
     scheduling,
@@ -46,3 +47,4 @@ app.include_router(dashboard.router, prefix=API_PREFIX)
 app.include_router(audit_log.router, prefix=API_PREFIX)
 app.include_router(baselines.router, prefix=API_PREFIX)
 app.include_router(search.router, prefix=API_PREFIX)
+app.include_router(import_export.router, prefix=API_PREFIX)

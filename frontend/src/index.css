@@ -475,6 +475,26 @@ body {
   color: var(--color-text-muted);
 }
 
+/* Import / Export */
+
+.data-table__row--error {
+  background: #fdecea;
+}
+
+.import-row-status--ok {
+  color: #1c7a3c;
+}
+
+.import-row-errors {
+  margin: 0;
+  padding-left: 18px;
+  color: #b3261e;
+}
+
+.import-row-errors li {
+  font-size: 12px;
+}
+
 /* Buttons */
 
 .button {

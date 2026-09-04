@@ -4,6 +4,7 @@ import { AdminLayout } from "./pages/admin/AdminLayout";
 import { ActivitiesAdmin } from "./pages/admin/ActivitiesAdmin";
 import { BaselinesAdmin } from "./pages/admin/BaselinesAdmin";
 import { DependenciesAdmin } from "./pages/admin/DependenciesAdmin";
+import { ImportExportAdmin } from "./pages/admin/ImportExportAdmin";
 import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
 import { Dashboard } from "./pages/Dashboard";
@@ -26,6 +27,7 @@ export function App() {
           <Route path="activities" element={<ActivitiesAdmin />} />
           <Route path="dependencies" element={<DependenciesAdmin />} />
           <Route path="baselines" element={<BaselinesAdmin />} />
+          <Route path="import-export" element={<ImportExportAdmin />} />
         </Route>
       </Route>
     </Routes>

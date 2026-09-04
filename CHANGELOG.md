@@ -1,5 +1,83 @@
 # Changelog
 
+## Phase 12 — Import CSV/Excel (2026-09-04)
+
+Bulk-create activities from a spreadsheet, following the same
+never-write-silently principle the scheduling engine established in
+Phase 6: a mandatory preview step shows exactly what will happen before
+anything is committed.
+
+**Scope decision:** the master spec's "Import CSV/Excel" phase doesn't
+pin down which entity types are importable. Activities are the entity
+organizations actually need to bulk-load (a season's worth of planned
+tasks from a spreadsheet used before this tool existed); milestones,
+dependencies, and calendar events remain single-item admin flows for now
+— nothing about the import pipeline below is activity-specific at the
+architecture level, so extending it to another entity type later is
+additive, not a rework.
+
+**Backend**
+- `app/services/import_activities.py::parse_upload` reads either a
+  `.csv` or `.xlsx` file into normalized `{header: cell}` rows (headers
+  are lowercased and space/dash-normalized, so "Owner Team" and
+  "owner_team" are equivalent); XLSX support uses `openpyxl` (new
+  dependency), CSV uses the standard library. Fully blank lines are
+  skipped rather than treated as invalid rows.
+- Row validation resolves `owner_team`/`owner_user`/`contributors`/`tags`
+  by name (case-insensitive; users may also be matched by email) against
+  existing Teams/Users/Tags — matching the rest of the app's rule that
+  these references must already exist, rather than silently
+  auto-creating them from typos in a spreadsheet. Dates must be
+  `YYYY-MM-DD`; `status`/`priority` accept the same enum values used
+  everywhere else in the API, defaulting to `not_started`/`normal` when
+  left blank.
+- `POST /import/activities/preview` parses and validates without writing
+  anything, returning every row (valid or not) with its specific error
+  list. `POST /import/activities/apply` **re-parses and re-validates the
+  uploaded file itself** rather than trusting a client-submitted preview
+  result — the same "never trust a client-submitted diff" rule the
+  scheduling engine's `/apply` endpoint follows — then creates one
+  Activity per valid row via the existing `activities.create_activity`
+  service (so import gets the same date/reference validation as the
+  admin form, for free) and reports created vs. skipped counts.
+- `GET /import/activities/template` serves a downloadable CSV with the
+  exact expected header row and one example line.
+- 13 new tests (95/95 total): valid-row pass-through, name-based
+  team/user/tag resolution, missing-required-field errors, end-before-
+  start rejection, unknown-reference errors (team/user/contributor/tag),
+  invalid status/priority values, preview writing nothing, apply
+  creating only the valid rows and correctly linking resolved
+  references, apply re-validating rather than trusting prior state,
+  unsupported file extensions, and a real `.xlsx` file built with
+  `openpyxl` end-to-end.
+
+**Frontend**
+- Admin > Import / Export (replacing the "Arrives in Phase 12"
+  placeholder): pick a `.csv`/`.xlsx` file (or grab the template first),
+  see every row in a table — errors shown inline per row, invalid rows
+  highlighted — then a single "Import N rows" button that only imports
+  the rows that passed validation. After applying, the same table
+  updates to show what was actually created.
+- `api/client.ts` gained `postForm`, a small variant of the JSON request
+  helper that sends `FormData` without forcing a JSON `Content-Type`
+  header (the browser sets the correct multipart boundary itself) while
+  still attaching the `X-User-Id` header like every other mutating call.
+
+**Verified:** 95/95 backend tests pass, frontend type-checks clean.
+Checked end-to-end in a browser with a 4-row CSV (2 valid rows
+referencing real seeded teams/users by name, 1 row missing its dates, 1
+row referencing a non-existent team) — the preview correctly showed 2
+"Ready" rows and 2 rows with their specific error messages, and
+"Import 2 rows" created exactly those two activities with their owner
+team, owner user, contributors, and tags all correctly linked (confirmed
+via a direct API query, not just the UI) — the two invalid rows were not
+written. Also confirmed a real `.xlsx` upload parses correctly via the
+backend test suite. Test data removed via the API afterward.
+
+**Not yet implemented:** import for milestones/dependencies/calendar
+events (see the scope decision above — the pipeline is structured to
+extend to these later without a rework), and Excel export (Phase 13).
+
 ## Phase 11 — Baselines (2026-09-04)
 
 Plan-vs-actual comparison: snapshot every activity's and milestone's

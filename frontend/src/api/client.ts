@@ -36,11 +36,15 @@ function extractErrorMessage(bodyText: string): string {
   return bodyText;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  jsonBody = true,
+): Promise<T> {
   const userId = useCurrentUserStore.getState().userId;
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
-      "Content-Type": "application/json",
+      ...(jsonBody ? { "Content-Type": "application/json" } : {}),
       ...(userId != null ? { "X-User-Id": String(userId) } : {}),
       ...(init?.headers ?? {}),
     },
@@ -62,4 +66,8 @@ export const api = {
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (path: string) => request<void>(path, { method: "DELETE" }),
+  // No Content-Type header here — the browser sets multipart/form-data
+  // with the correct boundary itself when the body is a FormData.
+  postForm: <T>(path: string, formData: FormData) =>
+    request<T>(path, { method: "POST", body: formData }, false),
 };
