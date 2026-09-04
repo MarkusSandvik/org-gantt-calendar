@@ -334,6 +334,40 @@ body {
   white-space: nowrap;
 }
 
+.dependency-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.dependency-form select,
+.dependency-form input {
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dependency-form__arrow {
+  color: var(--color-text-muted);
+}
+
+.dependency-form__lag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dependency-form__lag input {
+  width: 60px;
+}
+
 .chip-toggle--active {
   background: var(--color-accent);
   border-color: var(--color-accent);
@@ -675,7 +709,8 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 4px 0;
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid var(--color-border);
   box-sizing: border-box;
 }
@@ -803,4 +838,17 @@ body {
   font-size: 11px;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.gantt-dependency-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.gantt-dependency-arrow {
+  fill: none;
+  stroke: #8a93a1;
+  stroke-width: 1.5;
 }

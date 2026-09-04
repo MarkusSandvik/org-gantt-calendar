@@ -1,5 +1,69 @@
 # Changelog
 
+## Phase 5 — Dependencies (2026-09-04)
+
+Dependency modeling, cycle prevention, and arrow visualization in the
+Gantt. Auto-scheduling / schedule propagation is explicitly out of scope
+here — that's Phase 6, per the architecture proposal.
+
+**Backend**
+- `GET/POST/DELETE /dependencies`. Endpoints are polymorphic (an
+  activity or a milestone can be either end), matching the `Dependency`
+  model from Phase 1.
+- Cycle prevention: on create, a BFS from the proposed successor over
+  existing edges checks whether it can already reach the proposed
+  predecessor — if so, the new edge would close a loop and is rejected
+  (409) before it's ever written. Self-referential edges (422) and exact
+  duplicate edges (409) are also rejected.
+- `DependencyRead` resolves human-readable `predecessor_label` /
+  `successor_label` (the activity/milestone title) so the frontend doesn't
+  need a second round-trip to display a dependency list.
+- 8 new pytest cases: create, self-loop rejection, duplicate rejection,
+  cycle rejection (A→B, B→C, then C→A), unknown-endpoint 404,
+  activity↔milestone cross-type dependency, list with labels, delete.
+
+**Frontend**
+- Admin > Dependencies: a real page (replacing the "Arrives in Phase 5"
+  placeholder) — a form to add a dependency (predecessor/successor pickers
+  spanning both activities and milestones, lag days) and a table of
+  existing ones with remove buttons. Backend validation errors (cycle,
+  duplicate, self-loop) surface directly in the form.
+- Gantt: dependency arrows, drawn as an SVG overlay using a three-segment
+  elbow connector with an arrowhead marker. `rowLayout.ts` computes each
+  visible row's pixel position by walking the same milestones + team-group
+  structure the Gantt renders (in the same order), so an arrow can connect
+  any two rows — including across different team groups, which needed a
+  reliable y-coordinate for every row regardless of which group it's in.
+  Arrows respect the active filters: if either endpoint of a dependency
+  isn't currently visible (filtered out), that arrow is silently skipped
+  rather than pointing at nothing.
+- Fixed while verifying this: `ApiError` was surfacing the raw JSON
+  response body (`{"detail":"..."}`) as the error message shown to the
+  user. `api/client.ts` now extracts FastAPI's `detail` field — a plain
+  string for `HTTPException`, or a joined list of messages for a 422
+  validation error — falling back to the raw text only if neither shape
+  matches. This fixes error messages across every form, not just
+  Dependencies.
+
+**A layout constant now has to stay in two places:** `ROW_HEIGHT` and
+`GROUP_HEADER_HEIGHT` in `rowLayout.ts` must match the actual rendered row/
+group-header heights, which are now set via matching inline styles (not
+just CSS) precisely so this can't silently drift. If a future change
+resizes Gantt rows or group headers, both need to move together or arrows
+will land on the wrong row.
+
+**Verified:** 27/27 backend tests pass, frontend type-checks clean, checked
+in a browser against the seed data's existing PCB Design → PCB Assembly →
+System Integration → Pool Test chain — arrows render correctly at every
+zoom level, including the one link that crosses from the Electrical group
+down through Embedded, confirming cross-group position math. Also
+confirmed in the browser that closing that chain into a cycle (Pool Test →
+PCB Design) is correctly rejected with a clear error message.
+
+**Not yet implemented:** schedule propagation/preview/apply/undo (Phase 6),
+critical path analysis (explicitly deferred per the master spec until the
+dependency model — now in place — supports it).
+
 ## Phase 4 — Filters + search (2026-09-04)
 
 Every filter dimension the master spec lists for activities, applied

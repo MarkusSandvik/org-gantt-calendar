@@ -74,7 +74,7 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 4 (filters + search) is complete. See
+v0.1 in progress — Phase 5 (dependencies) is complete. See
 `CHANGELOG.md` for phase-by-phase progress.
 
 ## Mocked authentication

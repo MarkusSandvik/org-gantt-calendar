@@ -87,6 +87,30 @@ export interface Milestone {
   owner_user: ActivityRef | null;
 }
 
+export type SchedulableType = "activity" | "milestone";
+export type DependencyType = "finish_to_start";
+
+export interface Dependency {
+  id: number;
+  predecessor_type: SchedulableType;
+  predecessor_id: number;
+  predecessor_label: string;
+  successor_type: SchedulableType;
+  successor_id: number;
+  successor_label: string;
+  dependency_type: DependencyType;
+  lag_days: number;
+}
+
+export interface DependencyWritePayload {
+  predecessor_type: SchedulableType;
+  predecessor_id: number;
+  successor_type: SchedulableType;
+  successor_id: number;
+  dependency_type: DependencyType;
+  lag_days: number;
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {

@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { api } from "../../api/client";
-import type { Activity, Milestone, Project, Tag, Team, User } from "../../api/types";
+import type { Activity, Dependency, Milestone, Project, Tag, Team, User } from "../../api/types";
 import { FilterBar } from "../filters/FilterBar";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
+import { DependencyArrows } from "./DependencyArrows";
 import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
 import { TimelineHeader } from "./TimelineHeader";
+import { buildRowIndex, GROUP_HEADER_HEIGHT, ROW_HEIGHT } from "./rowLayout";
 import {
   addDays,
   dateToX,
@@ -17,7 +19,6 @@ import {
 } from "./dateScale";
 
 const LABEL_WIDTH = 240;
-const ROW_HEIGHT = 32;
 
 interface ActivityGroup {
   key: string;
@@ -108,6 +109,10 @@ export function GanttChart() {
     queryFn: () => api.get<Milestone[]>(`/milestones?${filterQuery}`),
     enabled: projectId != null,
   });
+  const { data: dependencies } = useQuery({
+    queryKey: ["dependencies"],
+    queryFn: () => api.get<Dependency[]>("/dependencies"),
+  });
 
   const range = useMemo(() => {
     if (!project) return null;
@@ -130,6 +135,11 @@ export function GanttChart() {
     () => buildGroups(activities ?? [], teams ?? []),
     [activities, teams],
   );
+
+  const rowIndex = useMemo(() => {
+    if (!range) return null;
+    return buildRowIndex(milestones ?? [], groups, range.start, zoom);
+  }, [milestones, groups, range, zoom]);
 
   if (!project || !range) {
     return <p>Loading Gantt data...</p>;
@@ -213,7 +223,10 @@ export function GanttChart() {
 
               {milestones && milestones.length > 0 && (
                 <div className="gantt-group">
-                  <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
+                  <div
+                    className="gantt-group__header"
+                    style={{ width: LABEL_WIDTH + totalWidth, height: GROUP_HEADER_HEIGHT }}
+                  >
                     <span className="gantt-group__header-text">Milestones</span>
                   </div>
                   {milestones.map((m) => (
@@ -231,7 +244,10 @@ export function GanttChart() {
 
               {groups.map((group) => (
                 <div key={group.key} className="gantt-group">
-                  <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
+                  <div
+                    className="gantt-group__header"
+                    style={{ width: LABEL_WIDTH + totalWidth, height: GROUP_HEADER_HEIGHT }}
+                  >
                     <span className="gantt-group__header-text">{group.label}</span>
                   </div>
                   {group.activities.map((activity) => (
@@ -246,6 +262,16 @@ export function GanttChart() {
                   ))}
                 </div>
               ))}
+
+              {rowIndex && dependencies && dependencies.length > 0 && (
+                <DependencyArrows
+                  dependencies={dependencies}
+                  positions={rowIndex.positions}
+                  labelWidth={LABEL_WIDTH}
+                  width={LABEL_WIDTH + totalWidth}
+                  height={rowIndex.totalHeight}
+                />
+              )}
             </div>
           </div>
         </div>
