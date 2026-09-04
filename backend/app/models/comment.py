@@ -4,7 +4,7 @@ from sqlalchemy import Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.enums import ActivityStatus, CommentableType
+from app.models.enums import CommentableType
 
 
 class Comment(Base):
@@ -20,7 +20,11 @@ class Comment(Base):
     created_at: Mapped[dt.datetime] = mapped_column(
         default=lambda: dt.datetime.now(dt.UTC)
     )
-    status_change_from: Mapped[ActivityStatus | None] = mapped_column(Enum(ActivityStatus))
-    status_change_to: Mapped[ActivityStatus | None] = mapped_column(Enum(ActivityStatus))
+    # Plain strings, not an Enum column: this entry may record either an
+    # ActivityStatus or a MilestoneStatus transition, and those are two
+    # different enums with non-overlapping values (e.g. "at_risk" only
+    # exists on MilestoneStatus).
+    status_change_from: Mapped[str | None] = mapped_column(String(30))
+    status_change_to: Mapped[str | None] = mapped_column(String(30))
 
     author: Mapped["User"] = relationship()  # noqa: F821

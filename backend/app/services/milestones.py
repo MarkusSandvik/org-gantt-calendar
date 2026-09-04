@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.dependency import Dependency
-from app.models.enums import MilestoneStatus, SchedulableType, TaggableType
+from app.models.enums import CommentableType, MilestoneStatus, SchedulableType, TaggableType
 from app.models.milestone import Milestone
 from app.models.tag import Tag, TagAssociation
 from app.models.team import Team
@@ -18,6 +18,10 @@ from app.schemas.milestone import (
     MilestoneUpdate,
     MilestoneUserRead,
 )
+from app.services import audit_log as audit_log_service
+from app.services import comments as comment_service
+
+AUDITED_MILESTONE_FIELDS = ("title", "description", "date", "team_id", "owner_user_id")
 
 
 def _get_team_or_404(db: Session, team_id: int) -> None:
@@ -148,13 +152,14 @@ def create_milestone(db: Session, payload: MilestoneCreate) -> MilestoneRead:
 
 
 def update_milestone(
-    db: Session, milestone_id: int, payload: MilestoneUpdate
+    db: Session, milestone_id: int, payload: MilestoneUpdate, user_id: int
 ) -> MilestoneRead:
     milestone = db.get(Milestone, milestone_id)
     if milestone is None:
         raise HTTPException(status_code=404, detail="Milestone not found")
 
     data = payload.model_dump(exclude_unset=True)
+    reason = data.pop("reason", None)
 
     if data.get("team_id") is not None:
         _get_team_or_404(db, data["team_id"])
@@ -162,12 +167,37 @@ def update_milestone(
         _get_user_or_404(db, data["owner_user_id"])
 
     tag_ids = data.pop("tag_ids", None)
+    new_status = data.pop("status", None)
+    old_status = milestone.status
+
+    field_changes = [
+        (field, getattr(milestone, field), data[field])
+        for field in AUDITED_MILESTONE_FIELDS
+        if field in data and getattr(milestone, field) != data[field]
+    ]
 
     for field, value in data.items():
         setattr(milestone, field, value)
+    if new_status is not None:
+        milestone.status = new_status
 
     if tag_ids is not None:
         _sync_tags(db, milestone, tag_ids)
+
+    if field_changes:
+        audit_log_service.write_field_changes(
+            db, "milestone", milestone.id, user_id, field_changes, reason
+        )
+    if new_status is not None and new_status != old_status:
+        comment_service.create_status_change_comment(
+            db,
+            CommentableType.MILESTONE,
+            milestone.id,
+            user_id,
+            old_status.value,
+            new_status.value,
+            reason,
+        )
 
     db.commit()
     db.refresh(milestone)

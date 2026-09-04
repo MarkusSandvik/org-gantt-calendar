@@ -8,6 +8,7 @@ import type {
   Team,
   User,
 } from "../../api/types";
+import { ActivityLogPanel } from "../../components/ActivityLogPanel";
 
 const STATUS_OPTIONS: ActivityStatus[] = [
   "not_started",
@@ -80,6 +81,7 @@ export function ActivityFormModal({
   errorMessage,
 }: ActivityFormModalProps) {
   const [form, setForm] = useState<ActivityWritePayload>(() => toPayload(projectId, activity));
+  const [reason, setReason] = useState("");
 
   function toggleContributor(userId: number) {
     setForm((f) => ({
@@ -106,7 +108,7 @@ export function ActivityFormModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(form);
+            onSubmit(reason.trim() ? { ...form, reason: reason.trim() } : form);
           }}
         >
           <label>
@@ -270,6 +272,17 @@ export function ActivityFormModal({
             ))}
           </fieldset>
 
+          {activity && (
+            <label>
+              Reason for this change (optional)
+              <input
+                placeholder="e.g. Supplier delivery slipped a week"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </label>
+          )}
+
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 
           <div className="modal-actions">
@@ -287,6 +300,16 @@ export function ActivityFormModal({
             </button>
           </div>
         </form>
+
+        {activity && (
+          <ActivityLogPanel
+            entityPath="activities"
+            entityAuditType="activity"
+            entityId={activity.id}
+            teams={teams}
+            users={users}
+          />
+        )}
       </div>
     </div>
   );

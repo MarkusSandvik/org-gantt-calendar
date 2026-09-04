@@ -6,7 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.models.activity import Activity, ActivityContributor
 from app.models.dependency import Dependency
-from app.models.enums import ActivityStatus, Priority, SchedulableType, TaggableType
+from app.models.enums import (
+    ActivityStatus,
+    CommentableType,
+    Priority,
+    SchedulableType,
+    TaggableType,
+)
 from app.models.tag import Tag, TagAssociation
 from app.models.team import Team
 from app.models.user import User
@@ -17,6 +23,19 @@ from app.schemas.activity import (
     ActivityTeamRead,
     ActivityUpdate,
     ActivityUserRead,
+)
+from app.services import audit_log as audit_log_service
+from app.services import comments as comment_service
+
+AUDITED_ACTIVITY_FIELDS = (
+    "title",
+    "description",
+    "start_date",
+    "end_date",
+    "progress_percent",
+    "priority",
+    "owner_team_id",
+    "owner_user_id",
 )
 
 
@@ -205,13 +224,14 @@ def create_activity(
 
 
 def update_activity(
-    db: Session, activity_id: int, payload: ActivityUpdate
+    db: Session, activity_id: int, payload: ActivityUpdate, user_id: int
 ) -> ActivityRead:
     activity = db.get(Activity, activity_id)
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
 
     data = payload.model_dump(exclude_unset=True)
+    reason = data.pop("reason", None)
 
     new_start = data.get("start_date", activity.start_date)
     new_end = data.get("end_date", activity.end_date)
@@ -224,14 +244,42 @@ def update_activity(
 
     contributor_ids = data.pop("contributor_user_ids", None)
     tag_ids = data.pop("tag_ids", None)
+    new_status = data.pop("status", None)
+    old_status = activity.status
+
+    # Status changes are recorded as their own chronological log entry
+    # (a Comment with status_change_from/to), not folded into the generic
+    # field-change audit trail — see the master spec's Comments section.
+    field_changes = [
+        (field, getattr(activity, field), data[field])
+        for field in AUDITED_ACTIVITY_FIELDS
+        if field in data and getattr(activity, field) != data[field]
+    ]
 
     for field, value in data.items():
         setattr(activity, field, value)
+    if new_status is not None:
+        activity.status = new_status
 
     if contributor_ids is not None:
         _sync_contributors(db, activity, contributor_ids)
     if tag_ids is not None:
         _sync_tags(db, activity, tag_ids)
+
+    if field_changes:
+        audit_log_service.write_field_changes(
+            db, "activity", activity.id, user_id, field_changes, reason
+        )
+    if new_status is not None and new_status != old_status:
+        comment_service.create_status_change_comment(
+            db,
+            CommentableType.ACTIVITY,
+            activity.id,
+            user_id,
+            old_status.value,
+            new_status.value,
+            reason,
+        )
 
     db.commit()
     db.refresh(activity)

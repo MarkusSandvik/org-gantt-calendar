@@ -49,6 +49,7 @@ class MilestoneUpdate(BaseModel):
     team_id: int | None = None
     owner_user_id: int | None = None
     tag_ids: list[int] | None = None
+    reason: str | None = Field(default=None, max_length=1000)
 
 
 class MilestoneRead(BaseModel):

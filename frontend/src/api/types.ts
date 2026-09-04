@@ -97,6 +97,7 @@ export interface MilestoneWritePayload {
   team_id: number | null;
   owner_user_id: number | null;
   tag_ids: number[];
+  reason?: string;
 }
 
 export type SchedulableType = "activity" | "milestone";
@@ -229,6 +230,30 @@ export interface DashboardSummary {
   attention_required: DashboardAttentionItem[];
 }
 
+export interface Comment {
+  id: number;
+  author: ActivityRef;
+  body: string;
+  created_at: string;
+  status_change_from: string | null;
+  status_change_to: string | null;
+}
+
+export interface CommentWritePayload {
+  body: string;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  user: ActivityRef;
+  timestamp: string;
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+  reason: string | null;
+  change_group_id: string | null;
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {
@@ -251,4 +276,5 @@ export interface ActivityWritePayload {
   owner_user_id: number | null;
   contributor_user_ids: number[];
   tag_ids: number[];
+  reason?: string;
 }

@@ -74,7 +74,7 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 9 (dashboard) is complete. See
+v0.1 in progress — Phase 10 (comments and activity log) is complete. See
 `CHANGELOG.md` for phase-by-phase progress.
 
 ## Mocked authentication

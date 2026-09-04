@@ -7,6 +7,7 @@ import type {
   Team,
   User,
 } from "../../api/types";
+import { ActivityLogPanel } from "../../components/ActivityLogPanel";
 
 const STATUS_OPTIONS: MilestoneStatus[] = [
   "not_started",
@@ -71,6 +72,7 @@ export function MilestoneFormModal({
   const [form, setForm] = useState<MilestoneWritePayload>(() =>
     toPayload(projectId, milestone),
   );
+  const [reason, setReason] = useState("");
 
   function toggleTag(tagId: number) {
     setForm((f) => ({
@@ -88,7 +90,7 @@ export function MilestoneFormModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(form);
+            onSubmit(reason.trim() ? { ...form, reason: reason.trim() } : form);
           }}
         >
           <label>
@@ -198,6 +200,17 @@ export function MilestoneFormModal({
             ))}
           </fieldset>
 
+          {milestone && (
+            <label>
+              Reason for this change (optional)
+              <input
+                placeholder="e.g. Waiting on one more review"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </label>
+          )}
+
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 
           <div className="modal-actions">
@@ -215,6 +228,16 @@ export function MilestoneFormModal({
             </button>
           </div>
         </form>
+
+        {milestone && (
+          <ActivityLogPanel
+            entityPath="milestones"
+            entityAuditType="milestone"
+            entityId={milestone.id}
+            teams={teams}
+            users={users}
+          />
+        )}
       </div>
     </div>
   );

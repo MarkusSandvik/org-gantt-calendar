@@ -1,5 +1,66 @@
 # Changelog
 
+## Phase 10 — Comments and activity log (2026-09-04)
+
+Activities and milestones get a real chronological history — the master
+spec's explicit alternative to "one comment field that gets overwritten" —
+synthesized with the field-level audit trail the scheduling engine has
+been writing since Phase 6, so both show up in one merged timeline instead
+of two disconnected places.
+
+**Model fix found and corrected before building on it:** `Comment.
+status_change_from/to` were typed as `ActivityStatus` only, but Comments
+also attach to milestones, which use a different, non-overlapping status
+enum (`at_risk`, `missed`, etc. don't exist on `ActivityStatus`). Changed
+both columns to plain strings via a proper Alembic migration (batch mode,
+as established since Phase 1) rather than working around it — storing an
+enum's `.value` works for either entity type and doesn't privilege one
+over the other.
+
+**Backend**
+- `GET/POST /activities/{id}/comments` and the same for milestones —
+  deliberately append-only, no PATCH/DELETE, matching the spec's "history
+  must remain available" framing.
+- `PATCH /activities/{id}` and `/milestones/{id}` now write an `AuditLog`
+  row (sharing one `change_group_id`, same convention the scheduling
+  engine uses) for every changed *scalar* field — title, dates,
+  progress, priority, owner/team — accepting an optional `reason`.
+  `status` is deliberately excluded from this generic diff: a status
+  transition instead auto-creates a `Comment` with `status_change_from/to`
+  populated, since the spec frames status changes as belonging in the
+  chronological log, not the field-audit trail. Enum values are stored via
+  explicit `.value` rather than `str()`, sidestepping a real Python-version-
+  dependent formatting difference for `(str, Enum)` mixins.
+- New `GET /audit-log?entity_type=&entity_id=` read endpoint (audit log
+  entries existed since Phase 6 but were write-only until now).
+- 18 new tests (74/74 total): comment ordering, empty-body rejection,
+  auto status-change comments (with and without a reason), no-op updates
+  writing nothing, status changes correctly absent from the audit log, and
+  audit entries scoped correctly per entity.
+
+**Frontend**
+- `ActivityLogPanel`, shared by both `ActivityFormModal` and
+  `MilestoneFormModal` (rendered only when editing an existing entity, not
+  while creating one): fetches comments and audit-log entries for that
+  entity and merges them into one chronological list — status-change
+  comments and plain notes rendered distinctly from field-change entries,
+  which resolve `owner_team_id`/`owner_user_id`/`team_id` values to names
+  client-side (using the teams/users lists the parent form already has)
+  rather than showing raw database ids. A plain textarea posts new notes.
+- Both edit forms gained an optional "Reason for this change" input,
+  applied to whichever of the audit trail / status-change comment ends up
+  being written by that save.
+
+**Verified:** 74/74 backend tests pass, frontend type-checks clean.
+Checked end-to-end in a browser: added a manual note, then in one save
+changed both priority (high → critical) and status (delayed → in
+progress) with a shared reason — the resulting log correctly showed all
+three entries in chronological order, with the field-change entry showing
+"Reason: ..." and the status-change entry using the same text as its
+comment body. Reset the local dev database afterward (comments have no
+delete endpoint by design) rather than leaving test data in the seed
+fixture.
+
 ## Phase 9 — Dashboard (2026-09-04)
 
 The operational-overview landing page — the last piece of v0.1's "Data" /
