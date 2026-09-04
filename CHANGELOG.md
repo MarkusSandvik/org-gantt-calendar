@@ -1,5 +1,61 @@
 # Changelog
 
+## Phase 11 — Baselines (2026-09-04)
+
+Plan-vs-actual comparison: snapshot every activity's and milestone's
+currently planned dates under a named baseline, then see how far the live
+plan has drifted from it later — the read-only counterpart to Phase 6's
+scheduling engine, which is what actually moves the dates baselines get
+compared against.
+
+**Model fix found and corrected before building on it:** `Baseline` had a
+`created_by_id` foreign-key column since Phase 1 but no matching ORM
+relationship, so `BaselineRead.model_validate(baseline)` failed with
+`created_by Field required` the moment the read schema tried to resolve
+it. Added `created_by: Mapped["User"] = relationship()` to the model — a
+Python-level addition only, no migration needed since the column already
+existed.
+
+**Backend**
+- `app/services/baselines.py::create_baseline` snapshots every Activity and
+  Milestone in the project into `BaselineActivity`/`BaselineMilestone` rows
+  under a new `Baseline` row. Baselines are never overwritten — creating a
+  new one never touches an earlier one, so historical snapshots stay
+  comparable against each other as well as against the live plan.
+- `get_baseline_comparison` joins each snapshot row against the entity's
+  current state, computing `delta_start_days`/`delta_end_days`; an entity
+  deleted since the baseline was taken is skipped rather than erroring
+  (`db.get()` returning `None`), and results are sorted by
+  `abs(delta_end_days)` descending so the largest drift surfaces first.
+- `GET/POST /baselines?project_id=`, `GET /baselines/{id}/comparison`.
+- 8 new tests (82/82 total): snapshot accuracy, multiple baselines
+  coexisting without overwriting, drift reflecting a later change,
+  comparison omitting a since-deleted activity, milestone drift, sort
+  order, list ordering, and unknown-baseline 404.
+
+**Frontend**
+- Admin > Baselines (replacing the "Arrives in Phase 11" placeholder): a
+  "Set Baseline" button/modal (name pre-filled with today's date, optional
+  note), a table of existing baselines, and — on selecting one — a
+  comparison table (Item / Baseline / Current / Drift) with milestones
+  shown as a single date and activities as a range. Drift is colored red
+  for later (`baseline-drift--later`), green for earlier
+  (`baseline-drift--earlier`), and muted for "On schedule".
+
+**Verified:** 82/82 backend tests pass, frontend type-checks clean.
+Checked end-to-end in a browser: created a baseline against the unmodified
+seed data (all 13 items correctly "On schedule"), then rescheduled PCB
+Design's end date by 7 days via the Gantt's `RescheduleModal` and let
+Phase 6's propagation cascade through its dependency chain. Re-selecting
+the same baseline correctly showed PCB Design +7d, PCB Assembly +5d,
+System Integration +3d, and Pool Test +2d — each matching the lag-adjusted
+cascade from Phase 6 — all in red, while every unrelated activity and
+milestone still read "On schedule".
+
+**Not yet implemented:** a baseline-vs-current overlay directly on the
+Gantt chart itself (the spec's comparison view is satisfied by the Admin
+table above); this remains a candidate for later polish, not a v0.1 gap.
+
 ## Phase 10 — Comments and activity log (2026-09-04)
 
 Activities and milestones get a real chronological history — the master

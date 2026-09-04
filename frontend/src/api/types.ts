@@ -254,6 +254,37 @@ export interface AuditLogEntry {
   change_group_id: string | null;
 }
 
+export interface Baseline {
+  id: number;
+  project_id: number;
+  name: string;
+  note: string | null;
+  created_by: ActivityRef;
+  created_at: string;
+}
+
+export interface BaselineCreatePayload {
+  name: string;
+  note: string | null;
+}
+
+export interface BaselineDriftItem {
+  entity_type: "activity" | "milestone";
+  entity_id: number;
+  label: string;
+  baseline_start: string;
+  baseline_end: string;
+  current_start: string;
+  current_end: string;
+  delta_start_days: number;
+  delta_end_days: number;
+}
+
+export interface BaselineComparison {
+  baseline: Baseline;
+  items: BaselineDriftItem[];
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {

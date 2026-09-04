@@ -5,6 +5,7 @@ from app.core.config import get_settings
 from app.routers import (
     activities,
     audit_log,
+    baselines,
     calendar_events,
     dashboard,
     dependencies,
@@ -43,4 +44,5 @@ app.include_router(milestones.router, prefix=API_PREFIX)
 app.include_router(calendar_events.router, prefix=API_PREFIX)
 app.include_router(dashboard.router, prefix=API_PREFIX)
 app.include_router(audit_log.router, prefix=API_PREFIX)
+app.include_router(baselines.router, prefix=API_PREFIX)
 app.include_router(search.router, prefix=API_PREFIX)

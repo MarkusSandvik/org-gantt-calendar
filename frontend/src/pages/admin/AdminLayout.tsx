@@ -6,7 +6,7 @@ const SECTIONS: { label: string; to: string | null; note: string }[] = [
   { label: "Tags", to: null, note: "Read-only for now — management UI lands with Teams/Users" },
   { label: "Users", to: null, note: "Read-only for now — management UI lands with Teams/Tags" },
   { label: "Dependencies", to: "dependencies", note: "" },
-  { label: "Baselines", to: null, note: "Arrives in Phase 11" },
+  { label: "Baselines", to: "baselines", note: "" },
   { label: "Import / Export", to: null, note: "Arrives in Phase 12" },
   { label: "Settings", to: null, note: "Arrives in a later phase" },
 ];

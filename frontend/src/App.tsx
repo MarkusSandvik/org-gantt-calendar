@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { ActivitiesAdmin } from "./pages/admin/ActivitiesAdmin";
+import { BaselinesAdmin } from "./pages/admin/BaselinesAdmin";
 import { DependenciesAdmin } from "./pages/admin/DependenciesAdmin";
 import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
@@ -24,6 +25,7 @@ export function App() {
           <Route index element={<Navigate to="activities" replace />} />
           <Route path="activities" element={<ActivitiesAdmin />} />
           <Route path="dependencies" element={<DependenciesAdmin />} />
+          <Route path="baselines" element={<BaselinesAdmin />} />
         </Route>
       </Route>
     </Routes>

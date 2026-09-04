@@ -22,6 +22,7 @@ class Baseline(Base):
     )
 
     project: Mapped["Project"] = relationship(back_populates="baselines")  # noqa: F821
+    created_by: Mapped["User"] = relationship()  # noqa: F821
     activity_snapshots: Mapped[list["BaselineActivity"]] = relationship(
         back_populates="baseline"
     )

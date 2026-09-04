@@ -442,6 +442,39 @@ body {
   background: var(--color-bg);
 }
 
+.data-table__row--selected {
+  background: #eef4ff;
+}
+
+.data-table__row--selected:hover {
+  background: #e3edfd;
+}
+
+/* Baselines */
+
+.baseline-comparison {
+  margin-top: 24px;
+}
+
+.baseline-comparison h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.baseline-drift--later {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.baseline-drift--earlier {
+  color: #1c7a3c;
+  font-weight: 600;
+}
+
+.baseline-drift--none {
+  color: var(--color-text-muted);
+}
+
 /* Buttons */
 
 .button {
