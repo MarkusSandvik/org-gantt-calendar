@@ -195,6 +195,40 @@ export interface CalendarEventWritePayload {
   related_activity_id: number | null;
 }
 
+export interface WeekCounts {
+  active_tasks: number;
+  milestones_this_week: number;
+  delayed: number;
+  blocked: number;
+  social_activities: number;
+  meetings: number;
+  upcoming_deadlines: number;
+}
+
+export interface DashboardUpcomingMilestone {
+  id: number;
+  title: string;
+  date: string;
+  team: string | null;
+}
+
+export interface DashboardAttentionItem {
+  id: number;
+  title: string;
+  status: ActivityStatus;
+  detail: string;
+}
+
+export interface DashboardSummary {
+  iso_year: number;
+  iso_week: number;
+  week_start: string;
+  week_end: string;
+  week_counts: WeekCounts;
+  upcoming_milestones: DashboardUpcomingMilestone[];
+  attention_required: DashboardAttentionItem[];
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {

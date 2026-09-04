@@ -1,5 +1,52 @@
 # Changelog
 
+## Phase 9 — Dashboard (2026-09-04)
+
+The operational-overview landing page — the last piece of v0.1's "Data" /
+"Project Management" surface that was still a placeholder.
+
+**Backend**
+- `GET /dashboard/summary?project_id=` — a single aggregated endpoint (per
+  the architecture proposal's own reasoning: avoid N+1 dashboard calls),
+  returning:
+  - `week_counts`: active tasks (in-progress activities), milestones this
+    week, delayed, blocked, social activities, meetings, and upcoming
+    deadlines (the last three scoped to calendar events overlapping the
+    current ISO week). The API always returns every count, including
+    zeros — hiding "meaningless zero-value categories" is presentation
+    logic and stays in the frontend, not baked into what the API reports.
+  - `upcoming_milestones`: the next 5 milestones from today, excluding
+    ones already `completed` or `missed`.
+  - `attention_required`: every delayed activity (with a computed "N days
+    delayed", falling back to "Delayed" if not yet past its end date) and
+    every blocked activity — for blocked items, it walks the dependency
+    graph for an incomplete predecessor and names it ("Blocked by X"),
+    falling back to a plain "Blocked" when no dependency explains it
+    (there's no separate free-text "reason" field on Activity, only the
+    dependency graph and the status itself).
+  - 6 new tests (62/62 total), including one confirming the dependency-
+    derived blocker detail and one confirming the plain fallback.
+
+**Frontend**
+- `Dashboard` (previously just a connectivity check since Phase 1) is now
+  the real operational overview: a metrics row that filters out zero
+  counts before rendering, "Upcoming Milestones", "Attention Required"
+  (clickable — takes you to the filtered Admin Activities view via the
+  same URL-filter mechanism global search already uses), and "This Week's
+  Schedule" (Monday–Friday, per the master spec's own example), which
+  reuses the day-bucketing approach `CalendarWeekPage` already established
+  rather than inventing a second way to group events by day.
+
+**Verified:** 62/62 backend tests pass, frontend type-checks clean.
+Checked in a browser against the seed data: the metrics row correctly
+showed only 3 tiles (active tasks, delayed, blocked) with the four
+zero-value categories (milestones/social/meetings/deadlines) hidden,
+Attention Required showed Battery Enclosure's "6 days delayed" computed
+correctly against today's date, and clicking it navigated to the filtered
+Admin view. The empty "This Week's Schedule" was also correctly empty —
+the seed calendar events are dated for the following week, so this is
+accurate, not a bug.
+
 ## Phase 8 — Milestones (2026-09-04)
 
 Milestones become fully manageable rather than read-only, and get a

@@ -579,6 +579,133 @@ body {
   flex: 1;
 }
 
+/* Dashboard */
+
+.dashboard-metrics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.dashboard-metric {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+}
+
+.dashboard-metric__count {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dashboard-metric__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-grid__left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px 18px;
+}
+
+.dashboard-section h2 {
+  font-size: 13px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.dashboard-list__title {
+  flex: 1;
+  min-width: 120px;
+}
+
+.dashboard-list__meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-list__clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 4px 8px;
+}
+
+.dashboard-list__clickable:hover {
+  background: var(--color-bg);
+}
+
+.dashboard-schedule-day {
+  border-top: 1px solid var(--color-border);
+  padding: 10px 0;
+}
+
+.dashboard-schedule-day:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.dashboard-schedule-day__header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.dashboard-schedule-day__header span {
+  font-weight: 400;
+  color: #9aa1ab;
+}
+
+.dashboard-schedule-day__events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 /* Calendar */
 
 .calendar-toolbar {
