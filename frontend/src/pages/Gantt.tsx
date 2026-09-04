@@ -1,10 +1,10 @@
-import { PagePlaceholder } from "../components/layout/PagePlaceholder";
+import { GanttChart } from "../components/gantt/GanttChart";
 
 export function Gantt() {
   return (
-    <PagePlaceholder
-      title="Gantt"
-      phaseNote="Timeline rendering, zoom levels, grouping and dependencies arrive in Phases 3 and 5."
-    />
+    <div className="page page--wide">
+      <h1>Gantt</h1>
+      <GanttChart />
+    </div>
   );
 }

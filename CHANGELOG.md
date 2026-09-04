@@ -1,5 +1,56 @@
 # Changelog
 
+## Phase 3 — Gantt read-only rendering (2026-09-04)
+
+The primary long-term planning view: a custom-built timeline (no Gantt
+library — see the architecture proposal's reasoning) rendering activities
+and milestones from live data.
+
+**Backend**
+- `GET /milestones` (read-only, `project_id` filter) — needed so the Gantt
+  can show milestones alongside activities; full milestone CRUD is still a
+  later phase.
+
+**Frontend**
+- `components/gantt/dateScale.ts`: pure date-math utilities — pixels-per-day
+  per zoom level, ISO 8601 week numbering (Monday-start, week 1 contains the
+  year's first Thursday), and month/week header block generation. Kept
+  framework-free so it can get real unit tests once a frontend test runner
+  is introduced.
+- `TimelineHeader`: month/year header row always shown; an ISO week-number
+  row shown at Month and Week zoom (suppressed at Quarter/Year, where weekly
+  ticks would be unreadably dense).
+- `GanttBar`: status-colored bars (not started / in progress / completed /
+  delayed / blocked) with a progress-percent fill overlay. Delayed and
+  blocked use a diagonal-stripe pattern, not just color, so they read
+  clearly even without relying on hue alone.
+- `MilestoneMarker`: diamond markers in a dedicated "Milestones" group above
+  the team groups.
+- `GanttChart`: activities grouped by owner team (sorted by the team's
+  `sort_order`, with an "Unassigned" group for activities with no owner
+  team), a red current-date line, and Year/Quarter/Month/Week zoom control.
+  Frozen header row and frozen row-label column (sticky top/left) so labels
+  stay visible while scrolling a timeline that can be much wider than the
+  viewport at finer zoom levels.
+- No filtering, search, drag-and-drop, or dependency arrows yet — filtering
+  is Phase 4, dependencies (including their visualization) are Phase 5, and
+  drag-and-drop is explicitly deferred until the scheduling engine exists
+  (per the master spec).
+
+**Fixed while building this:** `.app-content` (a flex item) was missing
+`min-width: 0`, so a wide Gantt grid expanded the whole page horizontally —
+including the sidebar nav scrolling out of view — instead of scrolling
+inside its own viewport. This is a common flexbox pitfall (flex items default
+to `min-width: auto`, refusing to shrink below their content's intrinsic
+width) worth remembering for any other wide-content view added later
+(the Calendar week view is a likely candidate).
+
+**Verified:** backend tests pass (13/13), frontend type-checks clean, all
+four zoom levels checked in a browser against the seeded data — including
+confirming the current-date line lands in ISO week 36 for 4 Sept 2026, which
+matches manual calculation, and that horizontal scrolling keeps the sidebar,
+header, and row labels correctly pinned in place.
+
 ## Phase 2 — Activity CRUD (2026-09-04)
 
 Full create/read/update/delete for activities, plus the supporting pieces

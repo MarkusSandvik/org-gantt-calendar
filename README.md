@@ -74,8 +74,8 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 2 (Activity CRUD) is complete. See `CHANGELOG.md`
-for phase-by-phase progress.
+v0.1 in progress — Phase 3 (Gantt read-only rendering) is complete. See
+`CHANGELOG.md` for phase-by-phase progress.
 
 ## Mocked authentication
 

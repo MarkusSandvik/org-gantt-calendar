@@ -74,6 +74,19 @@ export interface Activity {
   updated_at: string;
 }
 
+export type MilestoneStatus = "not_started" | "on_track" | "at_risk" | "completed" | "missed";
+
+export interface Milestone {
+  id: number;
+  project_id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  status: MilestoneStatus;
+  team: ActivityRef | null;
+  owner_user: ActivityRef | null;
+}
+
 export interface ActivityWritePayload {
   project_id: number;
   title: string;

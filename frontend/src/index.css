@@ -69,8 +69,13 @@ body {
 
 .app-content {
   flex: 1;
+  min-width: 0;
   padding: 24px 32px;
   max-width: 1200px;
+}
+
+.app-content:has(.page--wide) {
+  max-width: none;
 }
 
 .app-content__topbar {
@@ -405,4 +410,300 @@ body {
 
 .modal-actions__spacer {
   flex: 1;
+}
+
+/* Gantt */
+
+.gantt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.gantt-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.gantt-legend__item {
+  display: flex;
+  align-items: center;
+}
+
+.gantt-legend__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.gantt-legend__swatch--not_started {
+  background: #dfe3e8;
+  border: 1px solid #c4cad3;
+}
+.gantt-legend__swatch--in_progress {
+  background: #2f6fed;
+}
+.gantt-legend__swatch--completed {
+  background: #21a35f;
+}
+.gantt-legend__swatch--delayed {
+  background: repeating-linear-gradient(45deg, #e08a1e, #e08a1e 4px, #c97812 4px, #c97812 8px);
+}
+.gantt-legend__swatch--blocked {
+  background: repeating-linear-gradient(45deg, #d1453b, #d1453b 4px, #b32e25 4px, #b32e25 8px);
+}
+
+.zoom-control {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.zoom-control__btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  background: var(--color-surface);
+  border: none;
+  border-left: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.zoom-control__btn:first-child {
+  border-left: none;
+}
+
+.zoom-control__btn--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.gantt-viewport {
+  overflow: auto;
+  max-height: 75vh;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.gantt-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.gantt-header__corner {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.gantt-header__timeline {
+  position: relative;
+  flex: 1;
+}
+
+.gantt-header__row {
+  position: relative;
+  height: 24px;
+}
+
+.gantt-header__row--week {
+  height: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.gantt-header__cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  border-left: 1px solid var(--color-border);
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.gantt-header__cell--week {
+  font-size: 10px;
+  color: #9aa1ab;
+  justify-content: center;
+  padding-left: 0;
+}
+
+.gantt-body {
+  position: relative;
+}
+
+.gantt-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #d1453b;
+  z-index: 2;
+}
+
+.gantt-group__header {
+  background: #eef1f5;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.gantt-group__header-text {
+  position: sticky;
+  left: 12px;
+}
+
+.gantt-row {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.gantt-row__label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.gantt-row__track {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 5px;
+  height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.gantt-bar--not_started {
+  background: #dfe3e8;
+  border-color: #c4cad3;
+}
+.gantt-bar--in_progress {
+  background: #2f6fed;
+}
+.gantt-bar--completed {
+  background: #21a35f;
+}
+.gantt-bar--delayed {
+  background: repeating-linear-gradient(45deg, #e08a1e, #e08a1e 6px, #c97812 6px, #c97812 12px);
+}
+.gantt-bar--blocked {
+  background: repeating-linear-gradient(45deg, #d1453b, #d1453b 6px, #b32e25 6px, #b32e25 12px);
+}
+
+.gantt-bar__progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.gantt-bar__label {
+  position: absolute;
+  left: 6px;
+  font-size: 11px;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.gantt-bar--not_started .gantt-bar__label {
+  color: var(--color-text);
+  text-shadow: none;
+}
+
+.gantt-milestone {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gantt-milestone__diamond {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  background: #9aa1ab;
+}
+
+.gantt-milestone--not_started .gantt-milestone__diamond {
+  background: #9aa1ab;
+}
+.gantt-milestone--on_track .gantt-milestone__diamond {
+  background: #2f6fed;
+}
+.gantt-milestone--at_risk .gantt-milestone__diamond {
+  background: #e08a1e;
+}
+.gantt-milestone--completed .gantt-milestone__diamond {
+  background: #21a35f;
+}
+.gantt-milestone--missed .gantt-milestone__diamond {
+  background: #d1453b;
+}
+
+.gantt-milestone__label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
