@@ -74,7 +74,7 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 7 (calendar) is complete. See
+v0.1 in progress — Phase 8 (milestones) is complete. See
 `CHANGELOG.md` for phase-by-phase progress.
 
 ## Mocked authentication

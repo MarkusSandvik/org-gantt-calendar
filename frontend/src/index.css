@@ -252,6 +252,35 @@ body {
   color: #a3221b;
 }
 
+.milestone-status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.milestone-status-badge--not_started {
+  background: #eef1f5;
+  color: #5b6470;
+}
+.milestone-status-badge--on_track {
+  background: #dbe6fd;
+  color: #1c3f9e;
+}
+.milestone-status-badge--at_risk {
+  background: #fde9d0;
+  color: #9a5a10;
+}
+.milestone-status-badge--completed {
+  background: #dcf3e4;
+  color: #1c7a3c;
+}
+.milestone-status-badge--missed {
+  background: #fbdada;
+  color: #a3221b;
+}
+
 .tag-chip {
   display: inline-block;
   font-size: 11px;

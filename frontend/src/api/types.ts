@@ -85,6 +85,18 @@ export interface Milestone {
   status: MilestoneStatus;
   team: ActivityRef | null;
   owner_user: ActivityRef | null;
+  tags: ActivityTagRef[];
+}
+
+export interface MilestoneWritePayload {
+  project_id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  status: MilestoneStatus;
+  team_id: number | null;
+  owner_user_id: number | null;
+  tag_ids: number[];
 }
 
 export type SchedulableType = "activity" | "milestone";

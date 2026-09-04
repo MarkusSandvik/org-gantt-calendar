@@ -7,7 +7,7 @@ import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Gantt } from "./pages/Gantt";
-import { Milestones } from "./pages/Milestones";
+import { MilestonesPage } from "./pages/milestones/MilestonesPage";
 import { MyTasks } from "./pages/MyTasks";
 
 export function App() {
@@ -18,7 +18,7 @@ export function App() {
         <Route path="gantt" element={<Gantt />} />
         <Route path="calendar" element={<CalendarMonthPage />} />
         <Route path="calendar/week/:isoYear/:isoWeek" element={<CalendarWeekPage />} />
-        <Route path="milestones" element={<Milestones />} />
+        <Route path="milestones" element={<MilestonesPage />} />
         <Route path="my-tasks" element={<MyTasks />} />
         <Route path="admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="activities" replace />} />

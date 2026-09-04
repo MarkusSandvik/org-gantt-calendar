@@ -1,5 +1,44 @@
 # Changelog
 
+## Phase 8 — Milestones (2026-09-04)
+
+Milestones become fully manageable rather than read-only, and get a
+dedicated primary-nav page.
+
+**Backend**
+- `GET /milestones` was already read-only (Phase 1/4). Added
+  `POST/PATCH/DELETE /milestones`, tag support (milestones can now carry
+  tags via `TagAssociation`, same polymorphic pattern as activities), and
+  a dependency delete-guard mirroring the one activities have had since
+  Phase 2 — a milestone that's part of a dependency can't be deleted until
+  the dependency is removed. 7 new tests (56/56 total).
+
+**Frontend**
+- `/milestones` — previously a placeholder — is now a full list + create/
+  edit page: table (title, date, team, owner, status, tags), filters
+  (team, status, search), and `MilestoneFormModal`.
+- The same guard `ActivityFormModal` got in Phase 6 now applies to
+  milestones too: a milestone that appears in any `Dependency` has its
+  date field disabled in the form, with a hint pointing at the Gantt's
+  reschedule flow (clicking the milestone's diamond) — keeping date
+  changes for anything in the dependency graph going through the one path
+  that runs propagation and writes an audit trail, consistent with the
+  activity behavior.
+
+**Verified:** 56/56 backend tests pass, frontend type-checks clean.
+Checked in a browser: all 4 seeded milestones list correctly, created and
+then deleted a real milestone via the API to confirm the round-trip, and
+temporarily linked a milestone into a dependency (via direct API calls,
+cleaned up after) to confirm the date-field guard renders exactly as
+designed before removing the test data. The Gantt (which already rendered
+milestones since Phase 3) continues to work unchanged.
+
+**Not yet implemented:** dashboard integration — deferred until the
+Dashboard itself exists (Phase 9); today's Dashboard is still the Phase 1
+connectivity-check placeholder, so there's nothing to integrate milestones
+*into* yet. The Gantt half of "Gantt + dashboard integration" from the
+original phase plan was already done in Phase 3.
+
 ## Phase 7 — Calendar (2026-09-04)
 
 The primary short-term organizational planning view: a month grid and a
