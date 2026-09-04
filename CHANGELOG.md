@@ -1,5 +1,76 @@
 # Changelog
 
+## Phase 7 — Calendar (2026-09-04)
+
+The primary short-term organizational planning view: a month grid and a
+week-detail view, both reachable from each other and from the Gantt.
+
+**Architecture note — deviation from the original proposal:** the initial
+architecture doc recommended FullCalendar for the calendar grid. Building
+it, I went custom instead: Phase 3 had already produced solid, correct ISO
+week/date-math utilities (`getISOWeek`, `addDays`, etc.), a month grid on
+top of them is not complex, and matching FullCalendar's theming to this
+app's existing design system would have cost more than writing the grid
+directly. Recurrence (the main thing FullCalendar would have bought)
+remains explicitly out of scope for v0.1 per the master spec, so nothing
+was actually given up. `CalendarEvent.recurrence_rule` still exists on the
+model, unused, for whenever that lands.
+
+**Refactor:** extracted `parseISODate`/`daysBetween`/`addDays`/`getISOWeek`
+out of `components/gantt/dateScale.ts` into a shared `utils/date.ts` (re-
+exported from `dateScale.ts` so no existing Gantt import had to change),
+plus added `formatISODate` and `isoWeekToMonday`. Both the Gantt and the
+new Calendar need the exact same ISO week math — keeping it in one place
+means it can only be wrong in one place.
+
+**Backend**
+- Full `CalendarEvent` CRUD (`GET/POST/PATCH/DELETE /calendar-events`),
+  the last of the five core entities (Activity, Milestone, Dependency,
+  Tag, CalendarEvent) to get one — filters by project/team/event type, and
+  by date range using the same overlap semantics as activities'
+  `date_from`/`date_to` from Phase 4. 7 new tests (49/49 total).
+
+**Frontend**
+- `MonthGrid`: a Monday-start month grid with a clickable ISO week number
+  per row (`buildMonthGrid` in `monthLayout.ts` pads in the leading/
+  trailing days from adjacent months), today highlighted, and events shown
+  as colored chips per day (one color per `CalendarEventType`). Clicking a
+  day opens the create-event modal pre-filled with that date; clicking an
+  event opens it for editing.
+- `CalendarEventModal`: title/description/type/location/team/owner/related-
+  activity, with an all-day toggle that swaps the start/end inputs between
+  `date` and `datetime-local`.
+- `CalendarWeekPage` at `/calendar/week/:isoYear/:isoWeek`: day-by-day
+  event list plus a "Running project activities" panel — activities whose
+  date range overlaps the week, with status/priority/progress — reusing
+  the `date_from`/`date_to` activity filter from Phase 4 rather than
+  needing anything new. Matches the master spec's own week-view example
+  closely enough that it was useful as an informal acceptance check.
+- Week numbers are now clickable in *both* places the spec asks for: the
+  Gantt's timeline header (added an `onWeekClick` prop to
+  `TimelineHeader`) and the Calendar's month grid — both navigate to the
+  same week route.
+
+**Renamed while building this:** `monthGrid.ts` (the layout util) collided
+with `MonthGrid.tsx` (the component) on Windows' case-insensitive
+filesystem — TypeScript reported it as a real error (TS1261/TS1149), not
+a silent bug, so it was caught immediately. Renamed the util to
+`monthLayout.ts`.
+
+**Verified:** 49/49 backend tests pass, frontend type-checks clean.
+Checked in a browser against the seed data: the month grid placed all 6
+seeded events on their correct days and colors, clicking week 37 from
+*both* the Calendar's gutter and the Gantt's header navigated to the same
+week view showing the exact Monday–Friday schedule from the master spec's
+own example plus the correct set of overlapping activities, and creating
+then deleting a real event round-tripped correctly (confirmed via direct
+API query, not just the UI).
+
+**Not yet implemented:** recurring events (explicitly deferred per the
+master spec), a day view, drag-to-reschedule for calendar events (Gantt
+activities already have this via Phase 6's reschedule modal; events don't
+participate in the dependency graph so there's nothing to propagate).
+
 ## Phase 6 — Scheduling engine (2026-09-04)
 
 Dependency-aware date propagation with a mandatory preview step — the

@@ -3,7 +3,8 @@ import { AppShell } from "./components/layout/AppShell";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { ActivitiesAdmin } from "./pages/admin/ActivitiesAdmin";
 import { DependenciesAdmin } from "./pages/admin/DependenciesAdmin";
-import { Calendar } from "./pages/Calendar";
+import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
+import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Gantt } from "./pages/Gantt";
 import { Milestones } from "./pages/Milestones";
@@ -15,7 +16,8 @@ export function App() {
       <Route element={<AppShell />}>
         <Route index element={<Dashboard />} />
         <Route path="gantt" element={<Gantt />} />
-        <Route path="calendar" element={<Calendar />} />
+        <Route path="calendar" element={<CalendarMonthPage />} />
+        <Route path="calendar/week/:isoYear/:isoWeek" element={<CalendarWeekPage />} />
         <Route path="milestones" element={<Milestones />} />
         <Route path="my-tasks" element={<MyTasks />} />
         <Route path="admin" element={<AdminLayout />}>

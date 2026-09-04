@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.routers import (
     activities,
+    calendar_events,
     dependencies,
     health,
     milestones,
@@ -37,4 +38,5 @@ app.include_router(activities.router, prefix=API_PREFIX)
 app.include_router(dependencies.router, prefix=API_PREFIX)
 app.include_router(scheduling.router, prefix=API_PREFIX)
 app.include_router(milestones.router, prefix=API_PREFIX)
+app.include_router(calendar_events.router, prefix=API_PREFIX)
 app.include_router(search.router, prefix=API_PREFIX)

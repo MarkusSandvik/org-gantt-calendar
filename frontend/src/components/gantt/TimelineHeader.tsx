@@ -5,9 +5,16 @@ interface TimelineHeaderProps {
   rangeEnd: Date;
   zoom: ZoomLevel;
   labelWidth: number;
+  onWeekClick?: (isoYear: number, isoWeek: number) => void;
 }
 
-export function TimelineHeader({ rangeStart, rangeEnd, zoom, labelWidth }: TimelineHeaderProps) {
+export function TimelineHeader({
+  rangeStart,
+  rangeEnd,
+  zoom,
+  labelWidth,
+  onWeekClick,
+}: TimelineHeaderProps) {
   const months = monthBlocks(rangeStart, rangeEnd, zoom);
   const showWeeks = zoom === "week" || zoom === "month";
   const weeks = showWeeks ? weekBlocks(rangeStart, rangeEnd, zoom) : [];
@@ -30,8 +37,14 @@ export function TimelineHeader({ rangeStart, rangeEnd, zoom, labelWidth }: Timel
             {weeks.map((w) => (
               <div
                 key={w.key}
-                className="gantt-header__cell gantt-header__cell--week"
+                className={
+                  onWeekClick
+                    ? "gantt-header__cell gantt-header__cell--week gantt-header__cell--week-clickable"
+                    : "gantt-header__cell gantt-header__cell--week"
+                }
                 style={{ left: w.x, width: w.width }}
+                onClick={onWeekClick ? () => onWeekClick(w.isoYear, w.isoWeek) : undefined}
+                title={onWeekClick ? `Open week ${w.isoWeek}` : undefined}
               >
                 {w.label}
               </div>

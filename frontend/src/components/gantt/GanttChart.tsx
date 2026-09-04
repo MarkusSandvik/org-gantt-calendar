@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { Activity, Dependency, Milestone, Project, Tag, Team, User } from "../../api/types";
 import { FilterBar } from "../filters/FilterBar";
@@ -70,6 +71,7 @@ interface RescheduleTarget {
 }
 
 export function GanttChart() {
+  const navigate = useNavigate();
   const [zoom, setZoom] = useState<ZoomLevel>("month");
   const [reschedule, setReschedule] = useState<RescheduleTarget | null>(null);
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
@@ -220,6 +222,7 @@ export function GanttChart() {
               rangeEnd={range.end}
               zoom={zoom}
               labelWidth={LABEL_WIDTH}
+              onWeekClick={(isoYear, isoWeek) => navigate(`/calendar/week/${isoYear}/${isoWeek}`)}
             />
 
             <div className="gantt-body" style={{ position: "relative" }}>

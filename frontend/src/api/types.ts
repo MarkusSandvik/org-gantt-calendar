@@ -135,6 +135,54 @@ export interface SchedulingChangeRequest {
   reason?: string;
 }
 
+export type CalendarEventType =
+  | "meeting"
+  | "social"
+  | "deadline"
+  | "workshop"
+  | "recruitment"
+  | "sponsor"
+  | "travel"
+  | "presentation"
+  | "stand_duty"
+  | "other";
+
+export interface CalendarEventRef {
+  id: number;
+  title: string;
+}
+
+export interface CalendarEvent {
+  id: number;
+  project_id: number;
+  title: string;
+  description: string | null;
+  event_type: CalendarEventType;
+  start_datetime: string;
+  end_datetime: string;
+  all_day: boolean;
+  location: string | null;
+  team: ActivityRef | null;
+  owner_user: ActivityRef | null;
+  related_activity: CalendarEventRef | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CalendarEventWritePayload {
+  project_id: number;
+  title: string;
+  description: string | null;
+  event_type: CalendarEventType;
+  start_datetime: string;
+  end_datetime: string;
+  all_day: boolean;
+  location: string | null;
+  team_id: number | null;
+  owner_user_id: number | null;
+  related_activity_id: number | null;
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {

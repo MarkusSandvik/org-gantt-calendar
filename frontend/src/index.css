@@ -550,6 +550,250 @@ body {
   flex: 1;
 }
 
+/* Calendar */
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-toolbar__nav {
+  display: flex;
+  gap: 6px;
+}
+
+.calendar-toolbar__label {
+  flex: 1;
+  font-size: 16px;
+  margin: 0;
+  text-align: center;
+}
+
+.month-grid {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.month-grid__row {
+  display: flex;
+}
+
+.month-grid__row--header {
+  background: #f5f6f8;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.month-grid__week-gutter {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.month-grid__week-link {
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-bottom: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.month-grid__week-link:hover {
+  background: var(--color-bg);
+}
+
+.month-grid__day-label {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.month-grid__day {
+  flex: 1;
+  min-height: 90px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 4px 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.month-grid__day--outside {
+  background: #fafbfc;
+}
+
+.month-grid__day--outside .month-grid__day-number {
+  color: #c4cad3;
+}
+
+.month-grid__day--today {
+  background: #eef4ff;
+}
+
+.month-grid__day-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.month-grid__events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.event-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.event-chip--meeting {
+  background: #2f6fed;
+}
+.event-chip--social {
+  background: #d1459e;
+}
+.event-chip--deadline {
+  background: #d1453b;
+}
+.event-chip--workshop {
+  background: #7c3aed;
+}
+.event-chip--recruitment {
+  background: #21a35f;
+}
+.event-chip--sponsor {
+  background: #e08a1e;
+}
+.event-chip--travel {
+  background: #0891b2;
+}
+.event-chip--presentation {
+  background: #4f46e5;
+}
+.event-chip--stand_duty {
+  background: #6b7280;
+}
+.event-chip--other {
+  background: #9aa1ab;
+}
+
+.checkbox-label--inline {
+  align-self: flex-end;
+  margin-bottom: 8px !important;
+}
+
+.week-view {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.week-view__days {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.week-view__day {
+  background: var(--color-surface);
+  padding: 10px 14px;
+}
+
+.week-view__day-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.week-view__day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-view__empty {
+  font-size: 12px;
+  color: #c4cad3;
+  margin: 0;
+}
+
+.week-view__running {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  min-width: 260px;
+}
+
+.week-view__running h2 {
+  font-size: 13px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.week-view__running-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.week-view__running-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.week-view__running-title {
+  flex: 1;
+  min-width: 120px;
+}
+
+.week-view__running-progress {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
 /* Gantt */
 
 .gantt-toolbar {
@@ -695,6 +939,16 @@ body {
   color: #9aa1ab;
   justify-content: center;
   padding-left: 0;
+}
+
+.gantt-header__cell--week-clickable {
+  cursor: pointer;
+}
+
+.gantt-header__cell--week-clickable:hover {
+  background: var(--color-bg);
+  color: var(--color-accent);
+  font-weight: 600;
 }
 
 .gantt-body {

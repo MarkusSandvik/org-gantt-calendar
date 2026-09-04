@@ -1,3 +1,7 @@
+import { addDays, daysBetween, getISOWeek } from "../../utils/date";
+
+export { addDays, daysBetween, getISOWeek, parseISODate } from "../../utils/date";
+
 export type ZoomLevel = "year" | "quarter" | "month" | "week";
 
 export const ZOOM_LEVELS: ZoomLevel[] = ["year", "quarter", "month", "week"];
@@ -9,41 +13,12 @@ export const PIXELS_PER_DAY: Record<ZoomLevel, number> = {
   week: 60,
 };
 
-const MS_PER_DAY = 86_400_000;
-
-export function parseISODate(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-export function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
-}
-
-export function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
 export function dateToX(date: Date, rangeStart: Date, zoom: ZoomLevel): number {
   return daysBetween(rangeStart, date) * PIXELS_PER_DAY[zoom];
 }
 
 export function timelineWidth(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): number {
   return dateToX(addDays(rangeEnd, 1), rangeStart, zoom);
-}
-
-/** ISO 8601 week number (Monday-start weeks, week 1 contains the year's first Thursday). */
-export function getISOWeek(date: Date): { isoYear: number; week: number } {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - dayNum + 3);
-  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
-  const week = 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * MS_PER_DAY));
-  return { isoYear: d.getUTCFullYear(), week };
 }
 
 function mondayOnOrBefore(date: Date): Date {
@@ -58,6 +33,11 @@ export interface HeaderBlock {
   label: string;
   x: number;
   width: number;
+}
+
+export interface WeekHeaderBlock extends HeaderBlock {
+  isoYear: number;
+  isoWeek: number;
 }
 
 /** Month (or quarter/year, depending on zoom) header blocks spanning the visible range. */
@@ -82,8 +62,8 @@ export function monthBlocks(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): 
 }
 
 /** ISO week header blocks. Only meaningful at "week"/"month" zoom — too dense otherwise. */
-export function weekBlocks(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): HeaderBlock[] {
-  const blocks: HeaderBlock[] = [];
+export function weekBlocks(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): WeekHeaderBlock[] {
+  const blocks: WeekHeaderBlock[] = [];
   let cursor = mondayOnOrBefore(rangeStart);
   while (cursor <= rangeEnd) {
     const nextWeek = addDays(cursor, 7);
@@ -92,7 +72,7 @@ export function weekBlocks(rangeStart: Date, rangeEnd: Date, zoom: ZoomLevel): H
     const x = dateToX(blockStart, rangeStart, zoom);
     const width = dateToX(blockEnd, rangeStart, zoom) - x;
     const { isoYear, week } = getISOWeek(blockStart);
-    blocks.push({ key: `${isoYear}-W${week}`, label: `W${week}`, x, width });
+    blocks.push({ key: `${isoYear}-W${week}`, label: `W${week}`, x, width, isoYear, isoWeek: week });
     cursor = nextWeek;
   }
   return blocks;
