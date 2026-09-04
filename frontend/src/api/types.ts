@@ -111,6 +111,30 @@ export interface DependencyWritePayload {
   lag_days: number;
 }
 
+export interface ScheduleChangeItem {
+  entity_type: SchedulableType;
+  entity_id: number;
+  label: string;
+  old_start_date: string;
+  old_end_date: string;
+  new_start_date: string;
+  new_end_date: string;
+  delta_days: number;
+}
+
+export interface SchedulingApplyResponse {
+  change_group_id: string;
+  changes: ScheduleChangeItem[];
+}
+
+export interface SchedulingChangeRequest {
+  entity_type: SchedulableType;
+  entity_id: number;
+  new_start_date: string;
+  new_end_date: string;
+  reason?: string;
+}
+
 export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
 
 export interface SearchResult {

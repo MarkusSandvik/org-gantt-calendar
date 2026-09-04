@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type { Activity, ActivityWritePayload, Project, Tag, Team, User } from "../../api/types";
+import type {
+  Activity,
+  ActivityWritePayload,
+  Dependency,
+  Project,
+  Tag,
+  Team,
+  User,
+} from "../../api/types";
 import { FilterBar } from "../../components/filters/FilterBar";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -29,6 +37,10 @@ export function ActivitiesAdmin() {
   const { data: tags } = useQuery({
     queryKey: ["tags"],
     queryFn: () => api.get<Tag[]>("/tags"),
+  });
+  const { data: dependencies } = useQuery({
+    queryKey: ["dependencies"],
+    queryFn: () => api.get<Dependency[]>("/dependencies"),
   });
 
   const filterQuery = toQueryString({ project_id: projectId });
@@ -141,6 +153,14 @@ export function ActivitiesAdmin() {
           teams={teams}
           users={users}
           tags={tags}
+          hasDependencies={
+            modalActivity != null &&
+            (dependencies ?? []).some(
+              (d) =>
+                (d.predecessor_type === "activity" && d.predecessor_id === modalActivity.id) ||
+                (d.successor_type === "activity" && d.successor_id === modalActivity.id),
+            )
+          }
           submitting={createMutation.isPending || updateMutation.isPending}
           errorMessage={formError}
           onClose={closeModal}

@@ -8,6 +8,7 @@ from app.routers import (
     health,
     milestones,
     projects,
+    scheduling,
     search,
     tags,
     teams,
@@ -34,5 +35,6 @@ app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(tags.router, prefix=API_PREFIX)
 app.include_router(activities.router, prefix=API_PREFIX)
 app.include_router(dependencies.router, prefix=API_PREFIX)
+app.include_router(scheduling.router, prefix=API_PREFIX)
 app.include_router(milestones.router, prefix=API_PREFIX)
 app.include_router(search.router, prefix=API_PREFIX)

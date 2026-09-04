@@ -7,6 +7,7 @@ import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { DependencyArrows } from "./DependencyArrows";
 import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
+import { RescheduleModal } from "./RescheduleModal";
 import { TimelineHeader } from "./TimelineHeader";
 import { buildRowIndex, GROUP_HEADER_HEIGHT, ROW_HEIGHT } from "./rowLayout";
 import {
@@ -60,8 +61,17 @@ function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
   return groups;
 }
 
+interface RescheduleTarget {
+  entityType: "activity" | "milestone";
+  entityId: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+}
+
 export function GanttChart() {
   const [zoom, setZoom] = useState<ZoomLevel>("month");
+  const [reschedule, setReschedule] = useState<RescheduleTarget | null>(null);
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
 
   const { data: projects } = useQuery({
@@ -235,7 +245,20 @@ export function GanttChart() {
                         {m.title}
                       </div>
                       <div className="gantt-row__track" style={{ width: totalWidth }}>
-                        <MilestoneMarker milestone={m} rangeStart={range.start} zoom={zoom} />
+                        <MilestoneMarker
+                          milestone={m}
+                          rangeStart={range.start}
+                          zoom={zoom}
+                          onClick={() =>
+                            setReschedule({
+                              entityType: "milestone",
+                              entityId: m.id,
+                              label: m.title,
+                              startDate: m.date,
+                              endDate: m.date,
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   ))}
@@ -256,7 +279,20 @@ export function GanttChart() {
                         {activity.title}
                       </div>
                       <div className="gantt-row__track" style={{ width: totalWidth }}>
-                        <GanttBar activity={activity} rangeStart={range.start} zoom={zoom} />
+                        <GanttBar
+                          activity={activity}
+                          rangeStart={range.start}
+                          zoom={zoom}
+                          onClick={() =>
+                            setReschedule({
+                              entityType: "activity",
+                              entityId: activity.id,
+                              label: activity.title,
+                              startDate: activity.start_date,
+                              endDate: activity.end_date,
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   ))}
@@ -275,6 +311,17 @@ export function GanttChart() {
             </div>
           </div>
         </div>
+      )}
+
+      {reschedule && (
+        <RescheduleModal
+          entityType={reschedule.entityType}
+          entityId={reschedule.entityId}
+          label={reschedule.label}
+          initialStartDate={reschedule.startDate}
+          initialEndDate={reschedule.endDate}
+          onClose={() => setReschedule(null)}
+        />
       )}
     </div>
   );

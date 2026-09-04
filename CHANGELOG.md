@@ -1,5 +1,84 @@
 # Changelog
 
+## Phase 6 — Scheduling engine (2026-09-04)
+
+Dependency-aware date propagation with a mandatory preview step — the
+master spec's core rule that dates must never change silently, now
+actually enforced end-to-end rather than just designed for.
+
+**Backend**
+- `app/services/scheduling.py::compute_propagation` — the pure algorithm,
+  framework-free (no DB, no FastAPI): forward-only, lag-aware,
+  duration-preserving BFS relaxation over the dependency graph. A
+  predecessor finishing later pushes each successor's start (and, keeping
+  its duration fixed, its end) forward by exactly what's needed to satisfy
+  the dependency's lag; a predecessor finishing *earlier* never pulls a
+  successor forward — only a later date ever forces a change, which is why
+  this always terminates on the DAG that Phase 5's cycle prevention
+  guarantees. 7 unit tests written directly against this function, before
+  the API layer existed, per the project's own testing principle for
+  scheduling logic: chain propagation, lag respected (including a
+  already-satisfied lag causing no push), pulling a predecessor earlier not
+  cascading, a diamond dependency correctly converging on the *larger* of
+  two competing pushes (not just the first edge relaxed), and milestones
+  as zero-duration nodes in the graph on both ends of an edge.
+- `POST /scheduling/preview` runs the algorithm read-only against live
+  data and returns every affected item — writes nothing.
+- `POST /scheduling/apply` recomputes the same result server-side (never
+  trusts a client-submitted diff) and commits it, writing one `AuditLog`
+  row per changed date field, all sharing a single generated
+  `change_group_id`.
+- `POST /scheduling/undo` reverts every row tagged with a given
+  `change_group_id` by restoring each field's `old_value` — and is itself
+  audited under a *new* change_group_id, so undoing is never a silent,
+  untracked action either.
+- 8 API-level tests: preview persists nothing, apply persists + writes the
+  expected audit rows, apply on a node with no dependents still updates
+  just that one node, undo reverts dates and is itself audited under a
+  distinct group id, undo of an unknown group 404s, preview of an unknown
+  entity 404s, end-before-start is rejected, and a milestone-initiated
+  change propagates into a dependent activity.
+
+**Frontend**
+- Gantt bars and milestone markers are now clickable, opening
+  `RescheduleModal` — editing the date(s) live-previews cascading impact
+  (debounced, via `/scheduling/preview`) as a table of affected items
+  before any commit, then an explicit "Apply changes" writes it via
+  `/scheduling/apply`. A "Schedule updated. [Undo]" affordance appears
+  immediately after applying.
+- This is now the *only* way dates move for anything with dependency
+  links — `ActivityFormModal`'s date fields are disabled (with an
+  explanatory hint) for any activity that appears as either end of a
+  `Dependency`, closing off a path that would otherwise silently bypass
+  both propagation and audit logging. Activities with no dependency links
+  keep the simple direct-edit behavior from Phase 2 unchanged.
+- Milestones — which still have no dedicated admin CRUD — are reschedulable
+  through this same modal, since it was already built to handle both
+  entity types.
+
+**Deliberately out of scope for v0.1** (per the original architecture
+proposal): the `Project.auto_scheduling_enabled` flag exists on the model
+but isn't wired to any behavior yet — every reschedule always shows a
+preview before applying, regardless of that flag. The flag remains a
+placeholder for a future refinement (e.g. auto-applying non-conflicting
+pushes without confirmation), not a design gap — "never silently change
+dates" is treated as an absolute rule for v0.1, not a toggle.
+
+**Verified:** 42/42 backend tests pass (8 new since Phase 5, on top of the
+7 pure-algorithm tests), frontend type-checks clean. Checked end-to-end in
+a browser: pushing PCB Design's end date by 7 days produced a live preview
+matching hand-calculated values for all three downstream links (PCB
+Assembly +5d, System Integration +3d, Pool Test +2d — each reflecting that
+link's lag and preserved duration), applying it updated the Gantt
+immediately, and Undo restored every affected activity's dates to their
+exact original values (confirmed via direct API query, not just the UI).
+Also confirmed the Admin form correctly disables date fields only for
+dependency-linked activities (PCB Design) while leaving unlinked ones
+(Battery Enclosure) freely editable as before.
+
+**Not yet implemented:** critical path analysis (still explicitly deferred
+per the master spec), baselines (Phase 11).
+
 ## Phase 5 — Dependencies (2026-09-04)
 
 Dependency modeling, cycle prevention, and arrow visualization in the

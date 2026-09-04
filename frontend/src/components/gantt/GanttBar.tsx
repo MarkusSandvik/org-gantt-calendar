@@ -7,9 +7,10 @@ interface GanttBarProps {
   activity: Activity;
   rangeStart: Date;
   zoom: ZoomLevel;
+  onClick?: () => void;
 }
 
-export function GanttBar({ activity, rangeStart, zoom }: GanttBarProps) {
+export function GanttBar({ activity, rangeStart, zoom, onClick }: GanttBarProps) {
   const start = parseISODate(activity.start_date);
   const end = parseISODate(activity.end_date);
   const left = dateToX(start, rangeStart, zoom);
@@ -20,15 +21,17 @@ export function GanttBar({ activity, rangeStart, zoom }: GanttBarProps) {
     `${activity.status.replace("_", " ")} · ${activity.progress_percent}%`,
     activity.owner_user ? `Owner: ${activity.owner_user.name}` : null,
     `${activity.start_date} → ${activity.end_date}`,
+    onClick ? "Click to reschedule" : null,
   ]
     .filter(Boolean)
     .join("\n");
 
   return (
     <div
-      className={`gantt-bar gantt-bar--${activity.status}`}
+      className={`gantt-bar gantt-bar--${activity.status}${onClick ? " gantt-bar--clickable" : ""}`}
       style={{ left, width }}
       title={tooltip}
+      onClick={onClick}
     >
       <div className="gantt-bar__progress" style={{ width: `${activity.progress_percent}%` }} />
       <span className="gantt-bar__label">{activity.title}</span>

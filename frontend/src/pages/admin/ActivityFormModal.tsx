@@ -25,6 +25,7 @@ interface ActivityFormModalProps {
   teams: Team[];
   users: User[];
   tags: Tag[];
+  hasDependencies?: boolean;
   onSubmit: (payload: ActivityWritePayload) => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -71,6 +72,7 @@ export function ActivityFormModal({
   teams,
   users,
   tags,
+  hasDependencies = false,
   onSubmit,
   onClose,
   onDelete,
@@ -131,6 +133,7 @@ export function ActivityFormModal({
               <input
                 type="date"
                 required
+                disabled={hasDependencies}
                 value={form.start_date}
                 onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
               />
@@ -140,11 +143,18 @@ export function ActivityFormModal({
               <input
                 type="date"
                 required
+                disabled={hasDependencies}
                 value={form.end_date}
                 onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
               />
             </label>
           </div>
+          {hasDependencies && (
+            <p className="form-hint">
+              This activity has dependency links, so dates are rescheduled from the Gantt
+              (click its bar) to preview the impact on dependent items before applying.
+            </p>
+          )}
 
           <div className="form-row">
             <label>
