@@ -1,6 +1,7 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
-import { Admin } from "./pages/Admin";
+import { AdminLayout } from "./pages/admin/AdminLayout";
+import { ActivitiesAdmin } from "./pages/admin/ActivitiesAdmin";
 import { Calendar } from "./pages/Calendar";
 import { Dashboard } from "./pages/Dashboard";
 import { Gantt } from "./pages/Gantt";
@@ -16,7 +17,10 @@ export function App() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="milestones" element={<Milestones />} />
         <Route path="my-tasks" element={<MyTasks />} />
-        <Route path="admin" element={<Admin />} />
+        <Route path="admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="activities" replace />} />
+          <Route path="activities" element={<ActivitiesAdmin />} />
+        </Route>
       </Route>
     </Routes>
   );

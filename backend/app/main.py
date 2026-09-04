@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import health, projects, teams
+from app.routers import activities, health, projects, tags, teams, users
 
 settings = get_settings()
 
@@ -20,3 +20,6 @@ API_PREFIX = "/api/v1"
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(teams.router, prefix=API_PREFIX)
+app.include_router(users.router, prefix=API_PREFIX)
+app.include_router(tags.router, prefix=API_PREFIX)
+app.include_router(activities.router, prefix=API_PREFIX)

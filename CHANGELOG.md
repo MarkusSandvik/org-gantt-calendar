@@ -1,5 +1,56 @@
 # Changelog
 
+## Phase 2 — Activity CRUD (2026-09-04)
+
+Full create/read/update/delete for activities, plus the supporting pieces
+needed to make that usable: a mocked-auth "acting as" user identity, and
+read-only Users/Tags endpoints to populate selects.
+
+**Backend**
+- `X-User-Id` header dependency (`app/core/deps.py`) resolves the acting
+  user for `created_by` attribution; falls back to the first user if the
+  header is omitted, so the API stays usable without it (e.g. via `/docs`).
+- `GET /users`, `GET /tags` (read-only; full admin CRUD for these follows in
+  a later phase — added now only because the Activity form's owner/
+  contributor/tag selects need them).
+- `GET/POST/PATCH/DELETE /activities` with filters (`project_id`, `team_id`,
+  `owner_user_id`, `status`, `priority`, `q`). Business logic lives in
+  `app/services/activities.py`, not the router: date-order and progress-range
+  validation, 404s for unknown team/user/tag references, and a 409 guard
+  that blocks deleting an activity with existing dependencies (dependencies
+  themselves arrive in Phase 5, but the guard is in place now so it isn't
+  forgotten later).
+- Contributors and tags are synced from plain id lists in the request body
+  (`contributor_user_ids`, `tag_ids`) rather than separate sub-resource
+  endpoints — simpler for v0.1's single-admin-form UI.
+- 13 pytest cases covering create/list/get/update/delete, partial-update
+  semantics (`PATCH` only touches fields actually sent), date/progress
+  validation, and the dependency-delete guard.
+
+**Frontend**
+- "Acting as" user switcher in the app shell top bar (Zustand store,
+  persisted to localStorage), defaults to the first seeded user and sends
+  `X-User-Id` on every mutating request via the extended API client
+  (`post`/`patch`/`delete`).
+- Admin is now a nested layout (`/admin/activities`, with placeholder tabs
+  for Teams/Tags/Users/Dependencies/Baselines/Import-Export/Settings naming
+  the phase each arrives in) instead of a single flat page.
+- Activities admin: filterable table (team, status, priority, title search)
+  and a single create/edit modal form covering all activity fields,
+  including checkbox multi-selects for contributors and tags. `StatusBadge`
+  and `PriorityBadge` components introduced here will be reused by the
+  Gantt and Dashboard later.
+
+**Verified:** backend tests pass (13/13), frontend type-checks clean,
+full create → list/filter → edit → delete flow exercised in a real browser
+against the running backend (delete verified via direct API call to avoid
+the native `confirm()` dialog blocking browser automation — the in-app
+delete button itself is unchanged and works normally for a human user).
+
+**Not yet implemented:** Teams/Tags/Users admin CRUD (currently read-only,
+supporting the Activity form only), Dependencies, Gantt rendering, and
+everything else on the Phase 3+ list below.
+
 ## Phase 1 — Project skeleton and database (2026-09-04)
 
 Establishes the runnable foundation for all later phases.

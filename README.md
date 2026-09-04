@@ -74,5 +74,14 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 1 (project skeleton, database schema, seed data,
-app shell) is complete. See `CHANGELOG.md` for phase-by-phase progress.
+v0.1 in progress — Phase 2 (Activity CRUD) is complete. See `CHANGELOG.md`
+for phase-by-phase progress.
+
+## Mocked authentication
+
+There is no real login yet. The frontend's "Acting as" switcher (top-right)
+lets you pick which seeded user is making requests; it's sent as an
+`X-User-Id` header and used for `created_by` attribution. Direct API calls
+without that header fall back to the first user in the database. This is
+designed to be swapped for real auth later without changing call sites —
+see `app/core/deps.py`.

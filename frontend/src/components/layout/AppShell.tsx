@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { UserSwitcher } from "./UserSwitcher";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -33,6 +34,9 @@ export function AppShell() {
         </nav>
       </aside>
       <main className="app-content">
+        <div className="app-content__topbar">
+          <UserSwitcher />
+        </div>
         <Outlet />
       </main>
     </div>
