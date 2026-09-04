@@ -87,6 +87,15 @@ export interface Milestone {
   owner_user: ActivityRef | null;
 }
 
+export type SearchResultType = "activity" | "milestone" | "team" | "tag" | "user";
+
+export interface SearchResult {
+  type: SearchResultType;
+  id: number;
+  label: string;
+  subtitle: string | null;
+}
+
 export interface ActivityWritePayload {
   project_id: number;
   title: string;

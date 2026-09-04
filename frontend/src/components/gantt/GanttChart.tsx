@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { api } from "../../api/client";
-import type { Activity, Milestone, Project, Team } from "../../api/types";
+import type { Activity, Milestone, Project, Tag, Team, User } from "../../api/types";
+import { FilterBar } from "../filters/FilterBar";
+import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
 import { TimelineHeader } from "./TimelineHeader";
@@ -59,6 +61,7 @@ function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
 
 export function GanttChart() {
   const [zoom, setZoom] = useState<ZoomLevel>("month");
+  const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -71,14 +74,38 @@ export function GanttChart() {
     queryKey: ["teams"],
     queryFn: () => api.get<Team[]>("/teams"),
   });
-  const { data: activities } = useQuery({
-    queryKey: ["activities", { projectId }],
+  const { data: users } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => api.get<User[]>("/users"),
+  });
+  const { data: tags } = useQuery({
+    queryKey: ["tags"],
+    queryFn: () => api.get<Tag[]>("/tags"),
+  });
+
+  // Unfiltered fetches, used only to keep the timeline's date range stable
+  // regardless of which filters are active — narrowing a filter shouldn't
+  // also rescale the whole chart.
+  const { data: allActivities } = useQuery({
+    queryKey: ["activities", "all", { projectId }],
     queryFn: () => api.get<Activity[]>(`/activities?project_id=${projectId}`),
     enabled: projectId != null,
   });
-  const { data: milestones } = useQuery({
-    queryKey: ["milestones", { projectId }],
+  const { data: allMilestones } = useQuery({
+    queryKey: ["milestones", "all", { projectId }],
     queryFn: () => api.get<Milestone[]>(`/milestones?project_id=${projectId}`),
+    enabled: projectId != null,
+  });
+
+  const filterQuery = toQueryString({ project_id: projectId });
+  const { data: activities } = useQuery({
+    queryKey: ["activities", "filtered", filterQuery],
+    queryFn: () => api.get<Activity[]>(`/activities?${filterQuery}`),
+    enabled: projectId != null,
+  });
+  const { data: milestones } = useQuery({
+    queryKey: ["milestones", "filtered", filterQuery],
+    queryFn: () => api.get<Milestone[]>(`/milestones?${filterQuery}`),
     enabled: projectId != null,
   });
 
@@ -87,17 +114,17 @@ export function GanttChart() {
     const dates: Date[] = [];
     if (project.start_date) dates.push(parseISODate(project.start_date));
     if (project.end_date) dates.push(parseISODate(project.end_date));
-    for (const a of activities ?? []) {
+    for (const a of allActivities ?? []) {
       dates.push(parseISODate(a.start_date), parseISODate(a.end_date));
     }
-    for (const m of milestones ?? []) {
+    for (const m of allMilestones ?? []) {
       dates.push(parseISODate(m.date));
     }
     if (dates.length === 0) return null;
     const start = new Date(Math.min(...dates.map((d) => d.getTime())));
     const end = new Date(Math.max(...dates.map((d) => d.getTime())));
     return { start: addDays(start, -3), end: addDays(end, 3) };
-  }, [project, activities, milestones]);
+  }, [project, allActivities, allMilestones]);
 
   const groups = useMemo(
     () => buildGroups(activities ?? [], teams ?? []),
@@ -115,8 +142,23 @@ export function GanttChart() {
   const showToday = todayMidnight >= range.start && todayMidnight <= range.end;
   const todayX = showToday ? dateToX(todayMidnight, range.start, zoom) : 0;
 
+  const noResults =
+    isActive &&
+    (activities?.length ?? 0) === 0 &&
+    (milestones?.length ?? 0) === 0;
+
   return (
     <div className="gantt">
+      <FilterBar
+        filters={filters}
+        onChange={setFilter}
+        onReset={reset}
+        isActive={isActive}
+        teams={teams ?? []}
+        users={users ?? []}
+        tags={tags ?? []}
+      />
+
       <div className="gantt-toolbar">
         <div className="gantt-legend">
           <span className="gantt-legend__item">
@@ -148,62 +190,66 @@ export function GanttChart() {
         </div>
       </div>
 
-      <div className="gantt-viewport">
-        <div className="gantt-grid" style={{ width: LABEL_WIDTH + totalWidth }}>
-          <TimelineHeader
-            rangeStart={range.start}
-            rangeEnd={range.end}
-            zoom={zoom}
-            labelWidth={LABEL_WIDTH}
-          />
+      {noResults ? (
+        <p>No activities or milestones match these filters.</p>
+      ) : (
+        <div className="gantt-viewport">
+          <div className="gantt-grid" style={{ width: LABEL_WIDTH + totalWidth }}>
+            <TimelineHeader
+              rangeStart={range.start}
+              rangeEnd={range.end}
+              zoom={zoom}
+              labelWidth={LABEL_WIDTH}
+            />
 
-          <div className="gantt-body" style={{ position: "relative" }}>
-            {showToday && (
-              <div
-                className="gantt-today-line"
-                style={{ left: LABEL_WIDTH + todayX }}
-                title={`Today — ${todayMidnight.toLocaleDateString("en-GB")}`}
-              />
-            )}
+            <div className="gantt-body" style={{ position: "relative" }}>
+              {showToday && (
+                <div
+                  className="gantt-today-line"
+                  style={{ left: LABEL_WIDTH + todayX }}
+                  title={`Today — ${todayMidnight.toLocaleDateString("en-GB")}`}
+                />
+              )}
 
-            {milestones && milestones.length > 0 && (
-              <div className="gantt-group">
-                <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
-                  <span className="gantt-group__header-text">Milestones</span>
-                </div>
-                {milestones.map((m) => (
-                  <div key={m.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
-                    <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
-                      {m.title}
-                    </div>
-                    <div className="gantt-row__track" style={{ width: totalWidth }}>
-                      <MilestoneMarker milestone={m} rangeStart={range.start} zoom={zoom} />
-                    </div>
+              {milestones && milestones.length > 0 && (
+                <div className="gantt-group">
+                  <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
+                    <span className="gantt-group__header-text">Milestones</span>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {groups.map((group) => (
-              <div key={group.key} className="gantt-group">
-                <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
-                  <span className="gantt-group__header-text">{group.label}</span>
+                  {milestones.map((m) => (
+                    <div key={m.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
+                      <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
+                        {m.title}
+                      </div>
+                      <div className="gantt-row__track" style={{ width: totalWidth }}>
+                        <MilestoneMarker milestone={m} rangeStart={range.start} zoom={zoom} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {group.activities.map((activity) => (
-                  <div key={activity.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
-                    <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
-                      {activity.title}
-                    </div>
-                    <div className="gantt-row__track" style={{ width: totalWidth }}>
-                      <GanttBar activity={activity} rangeStart={range.start} zoom={zoom} />
-                    </div>
+              )}
+
+              {groups.map((group) => (
+                <div key={group.key} className="gantt-group">
+                  <div className="gantt-group__header" style={{ width: LABEL_WIDTH + totalWidth }}>
+                    <span className="gantt-group__header-text">{group.label}</span>
                   </div>
-                ))}
-              </div>
-            ))}
+                  {group.activities.map((activity) => (
+                    <div key={activity.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
+                      <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
+                        {activity.title}
+                      </div>
+                      <div className="gantt-row__track" style={{ width: totalWidth }}>
+                        <GanttBar activity={activity} rangeStart={range.start} zoom={zoom} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

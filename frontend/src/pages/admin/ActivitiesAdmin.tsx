@@ -1,32 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type {
-  Activity,
-  ActivityStatus,
-  ActivityWritePayload,
-  Priority,
-  Project,
-  Tag,
-  Team,
-  User,
-} from "../../api/types";
+import type { Activity, ActivityWritePayload, Project, Tag, Team, User } from "../../api/types";
+import { FilterBar } from "../../components/filters/FilterBar";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
+import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { ActivityFormModal } from "./ActivityFormModal";
-
-const STATUS_FILTER_OPTIONS: ActivityStatus[] = [
-  "not_started",
-  "in_progress",
-  "completed",
-  "delayed",
-  "blocked",
-];
-
-const PRIORITY_FILTER_OPTIONS: Priority[] = ["low", "normal", "high", "critical"];
 
 export function ActivitiesAdmin() {
   const queryClient = useQueryClient();
+  const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -47,27 +31,10 @@ export function ActivitiesAdmin() {
     queryFn: () => api.get<Tag[]>("/tags"),
   });
 
-  const [teamFilter, setTeamFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [search, setSearch] = useState("");
-
-  const activitiesQueryKey = useMemo(
-    () => ["activities", { projectId, teamFilter, statusFilter, priorityFilter, search }],
-    [projectId, teamFilter, statusFilter, priorityFilter, search],
-  );
-
+  const filterQuery = toQueryString({ project_id: projectId });
   const { data: activities, isLoading } = useQuery({
-    queryKey: activitiesQueryKey,
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (projectId) params.set("project_id", String(projectId));
-      if (teamFilter) params.set("team_id", teamFilter);
-      if (statusFilter) params.set("status", statusFilter);
-      if (priorityFilter) params.set("priority", priorityFilter);
-      if (search) params.set("q", search);
-      return api.get<Activity[]>(`/activities?${params.toString()}`);
-    },
+    queryKey: ["activities", "filtered", filterQuery],
+    queryFn: () => api.get<Activity[]>(`/activities?${filterQuery}`),
     enabled: projectId != null,
   });
 
@@ -114,37 +81,15 @@ export function ActivitiesAdmin() {
   return (
     <div>
       <div className="toolbar">
-        <div className="filter-bar">
-          <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-            <option value="">All teams</option>
-            {teams?.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">All statuses</option>
-            {STATUS_FILTER_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s.replace("_", " ")}
-              </option>
-            ))}
-          </select>
-          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-            <option value="">All priorities</option>
-            {PRIORITY_FILTER_OPTIONS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Search title..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <FilterBar
+          filters={filters}
+          onChange={setFilter}
+          onReset={reset}
+          isActive={isActive}
+          teams={teams ?? []}
+          users={users ?? []}
+          tags={tags ?? []}
+        />
         <button className="button button--primary" onClick={() => setModalActivity(null)}>
           New Activity
         </button>

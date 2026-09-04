@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { GlobalSearch } from "./GlobalSearch";
 import { UserSwitcher } from "./UserSwitcher";
 
 const NAV_ITEMS = [
@@ -35,6 +36,7 @@ export function AppShell() {
       </aside>
       <main className="app-content">
         <div className="app-content__topbar">
+          <GlobalSearch />
           <UserSwitcher />
         </div>
         <Outlet />

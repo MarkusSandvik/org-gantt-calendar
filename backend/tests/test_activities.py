@@ -99,6 +99,61 @@ def test_list_activity_filters(client: TestClient, seed_basics: dict[str, int]) 
     assert search[0]["title"] == "On track thing"
 
 
+def test_list_activity_filter_by_tag(client: TestClient, seed_basics: dict[str, int]) -> None:
+    tagged = client.post("/api/v1/activities", json=make_payload(seed_basics)).json()
+    client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, title="Untagged thing", tag_ids=[]),
+    )
+
+    result = client.get(
+        "/api/v1/activities", params={"tag_id": seed_basics["tag_id"]}
+    ).json()
+    assert [a["id"] for a in result] == [tagged["id"]]
+
+
+def test_list_activity_filter_by_contributor(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    with_contributor = client.post(
+        "/api/v1/activities", json=make_payload(seed_basics)
+    ).json()
+    client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, title="No contributors", contributor_user_ids=[]),
+    )
+
+    result = client.get(
+        "/api/v1/activities", params={"contributor_user_id": seed_basics["other_user_id"]}
+    ).json()
+    assert [a["id"] for a in result] == [with_contributor["id"]]
+
+
+def test_list_activity_filter_by_date_range(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    # Default fixture activity runs 2026-08-05 to 2026-09-20.
+    early = client.post(
+        "/api/v1/activities",
+        json=make_payload(
+            seed_basics, title="Early thing", start_date="2026-01-01", end_date="2026-01-31"
+        ),
+    ).json()
+    default = client.post("/api/v1/activities", json=make_payload(seed_basics)).json()
+
+    in_range = client.get(
+        "/api/v1/activities",
+        params={"date_from": "2026-09-01", "date_to": "2026-09-30"},
+    ).json()
+    assert [a["id"] for a in in_range] == [default["id"]]
+
+    early_range = client.get(
+        "/api/v1/activities",
+        params={"date_from": "2026-01-01", "date_to": "2026-01-31"},
+    ).json()
+    assert [a["id"] for a in early_range] == [early["id"]]
+
+
 def test_update_activity_partial(client: TestClient, seed_basics: dict[str, int]) -> None:
     created = client.post("/api/v1/activities", json=make_payload(seed_basics)).json()
 

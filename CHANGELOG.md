@@ -1,5 +1,59 @@
 # Changelog
 
+## Phase 4 — Filters + search (2026-09-04)
+
+Every filter dimension the master spec lists for activities, applied
+consistently everywhere activities are listed, plus a simple global search
+across every entity type.
+
+**Backend**
+- `GET /activities` gains `tag_id`, `contributor_user_id`, `date_from`,
+  `date_to` (in addition to the `team_id`/`owner_user_id`/`status`/
+  `priority`/`q` from Phase 2). Date-range filtering uses overlap semantics
+  (`end_date >= date_from AND start_date <= date_to`), not exact containment,
+  so an activity spanning a filtered range is included even if it started
+  earlier or finishes later.
+- `GET /milestones` gains `team_id`, `date_from`, `date_to`, `q`.
+- `GET /search?q=` — a simple global search (per the master spec's "first
+  version may implement a simpler search") across activity titles, milestone
+  titles, team names, tag names, and user names, capped at 8 results per
+  type and requiring at least 2 characters.
+- 6 new pytest cases (tag filter, contributor filter, date-range filter ×2,
+  search-across-types, search minimum-length/no-match).
+
+**Frontend**
+- `useActivityFilters`: a `useSearchParams`-backed hook shared by every view
+  that filters activities. Filters live in the URL rather than component
+  state, so they're shareable/bookmarkable and — more importantly — so
+  global search results can link straight into a pre-filtered view instead
+  of needing a second piece of shared state.
+- `FilterBar`: one shared component (search, team, owner, contributor, tag,
+  status, priority, date range, plus "Delayed only"/"Blocked only" quick
+  toggles) now used identically by the Gantt and by Admin > Activities,
+  replacing the ad hoc filter bar Admin had before.
+- Gantt: applying filters narrows which activities/milestones render and
+  collapses team groups that end up empty, but does **not** rescale the
+  visible date range — that's still driven by the full unfiltered project
+  span, fetched separately, so narrowing a filter doesn't also disorient the
+  user by zooming the whole chart to just the filtered data's span.
+- `GlobalSearch`: a debounced search box in the app shell top bar. Results
+  are grouped by type; clicking one navigates into a filtered view — an
+  activity or milestone result searches by title, a team/tag/user result
+  filters Admin > Activities by that dimension. This is what makes the
+  filter-state-in-the-URL design pay off: no extra plumbing was needed to
+  wire search into the filtered views.
+
+**Verified:** 19/19 backend tests pass, frontend type-checks clean, checked
+in a browser — "Delayed only" correctly narrows to 2 activities while
+leaving the timeline's date range unchanged, and searching "test" then
+clicking the "Testing" tag result correctly navigates to
+`/admin/activities?tag_id=4` with the FilterBar reflecting the applied
+filter.
+
+**Not yet implemented:** filtering by milestone/dependency relationship
+(deferred until Phase 5's dependency graph exists), and search doesn't yet
+cover comments (comments don't exist until Phase 10).
+
 ## Phase 3 — Gantt read-only rendering (2026-09-04)
 
 The primary long-term planning view: a custom-built timeline (no Gantt

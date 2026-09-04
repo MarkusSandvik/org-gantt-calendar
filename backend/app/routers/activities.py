@@ -1,3 +1,5 @@
+import datetime as dt
+
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
@@ -16,8 +18,12 @@ def list_activities(
     project_id: int | None = None,
     team_id: int | None = None,
     owner_user_id: int | None = None,
+    contributor_user_id: int | None = None,
+    tag_id: int | None = None,
     status: ActivityStatus | None = None,
     priority: Priority | None = None,
+    date_from: dt.date | None = None,
+    date_to: dt.date | None = None,
     q: str | None = None,
     db: Session = Depends(get_db),
 ) -> list[ActivityRead]:
@@ -26,8 +32,12 @@ def list_activities(
         project_id=project_id,
         team_id=team_id,
         owner_user_id=owner_user_id,
+        contributor_user_id=contributor_user_id,
+        tag_id=tag_id,
         status=status,
         priority=priority,
+        date_from=date_from,
+        date_to=date_to,
         q=q,
     )
 

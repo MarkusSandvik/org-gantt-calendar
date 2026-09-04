@@ -74,7 +74,7 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 3 (Gantt read-only rendering) is complete. See
+v0.1 in progress — Phase 4 (filters + search) is complete. See
 `CHANGELOG.md` for phase-by-phase progress.
 
 ## Mocked authentication

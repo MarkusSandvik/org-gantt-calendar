@@ -80,7 +80,9 @@ body {
 
 .app-content__topbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 12px;
 }
 
@@ -90,6 +92,7 @@ body {
   gap: 8px;
   font-size: 13px;
   color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 .user-switcher select {
@@ -99,6 +102,77 @@ body {
   border-radius: 4px;
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.global-search {
+  position: relative;
+  width: 360px;
+  max-width: 40vw;
+}
+
+.global-search__input {
+  width: 100%;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.global-search__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.global-search__empty {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.global-search__group-label {
+  padding: 6px 14px 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.global-search__result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.global-search__result:hover {
+  background: var(--color-bg);
+}
+
+.global-search__result-subtitle {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-left: 12px;
+  white-space: nowrap;
 }
 
 .page h1 {
@@ -229,8 +303,10 @@ body {
 
 .filter-bar {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .filter-bar select,
@@ -241,6 +317,27 @@ body {
   border-radius: 4px;
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.filter-bar__search {
+  min-width: 160px;
+}
+
+.chip-toggle {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip-toggle--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
 }
 
 /* Data table */

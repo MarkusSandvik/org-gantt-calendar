@@ -1,3 +1,5 @@
+import datetime as dt
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,10 +13,23 @@ router = APIRouter(prefix="/milestones", tags=["milestones"])
 
 @router.get("", response_model=list[MilestoneRead])
 def list_milestones(
-    project_id: int | None = None, db: Session = Depends(get_db)
+    project_id: int | None = None,
+    team_id: int | None = None,
+    date_from: dt.date | None = None,
+    date_to: dt.date | None = None,
+    q: str | None = None,
+    db: Session = Depends(get_db),
 ) -> list[Milestone]:
     stmt = select(Milestone)
     if project_id is not None:
         stmt = stmt.where(Milestone.project_id == project_id)
+    if team_id is not None:
+        stmt = stmt.where(Milestone.team_id == team_id)
+    if date_from is not None:
+        stmt = stmt.where(Milestone.date >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(Milestone.date <= date_to)
+    if q:
+        stmt = stmt.where(Milestone.title.ilike(f"%{q}%"))
     stmt = stmt.order_by(Milestone.date)
     return list(db.scalars(stmt).all())

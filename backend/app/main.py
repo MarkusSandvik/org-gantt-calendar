@@ -2,7 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import activities, health, milestones, projects, tags, teams, users
+from app.routers import (
+    activities,
+    health,
+    milestones,
+    projects,
+    search,
+    tags,
+    teams,
+    users,
+)
 
 settings = get_settings()
 
@@ -24,3 +33,4 @@ app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(tags.router, prefix=API_PREFIX)
 app.include_router(activities.router, prefix=API_PREFIX)
 app.include_router(milestones.router, prefix=API_PREFIX)
+app.include_router(search.router, prefix=API_PREFIX)

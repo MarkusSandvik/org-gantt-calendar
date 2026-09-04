@@ -117,8 +117,12 @@ def list_activities(
     project_id: int | None = None,
     team_id: int | None = None,
     owner_user_id: int | None = None,
+    contributor_user_id: int | None = None,
+    tag_id: int | None = None,
     status: ActivityStatus | None = None,
     priority: Priority | None = None,
+    date_from: dt.date | None = None,
+    date_to: dt.date | None = None,
     q: str | None = None,
 ) -> list[ActivityRead]:
     stmt = select(Activity)
@@ -128,10 +132,31 @@ def list_activities(
         stmt = stmt.where(Activity.owner_team_id == team_id)
     if owner_user_id is not None:
         stmt = stmt.where(Activity.owner_user_id == owner_user_id)
+    if contributor_user_id is not None:
+        stmt = stmt.where(
+            Activity.id.in_(
+                select(ActivityContributor.activity_id).where(
+                    ActivityContributor.user_id == contributor_user_id
+                )
+            )
+        )
+    if tag_id is not None:
+        stmt = stmt.where(
+            Activity.id.in_(
+                select(TagAssociation.entity_id).where(
+                    TagAssociation.entity_type == TaggableType.ACTIVITY,
+                    TagAssociation.tag_id == tag_id,
+                )
+            )
+        )
     if status is not None:
         stmt = stmt.where(Activity.status == status)
     if priority is not None:
         stmt = stmt.where(Activity.priority == priority)
+    if date_from is not None:
+        stmt = stmt.where(Activity.end_date >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(Activity.start_date <= date_to)
     if q:
         stmt = stmt.where(Activity.title.ilike(f"%{q}%"))
     stmt = stmt.order_by(Activity.start_date)
