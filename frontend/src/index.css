@@ -1,0 +1,117 @@
+:root {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-border: #dde1e6;
+  --color-text: #1c2126;
+  --color-text-muted: #5b6470;
+  --color-accent: #2451c4;
+  --color-nav-bg: #14181f;
+  --color-nav-text: #c7cdd6;
+  --color-nav-text-active: #ffffff;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-nav {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--color-nav-bg);
+  color: var(--color-nav-text);
+  padding: 16px 0;
+}
+
+.app-nav__brand {
+  font-weight: 600;
+  font-size: 15px;
+  padding: 0 20px 16px;
+  color: var(--color-nav-text-active);
+}
+
+.app-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-nav__link {
+  display: block;
+  padding: 8px 20px;
+  color: var(--color-nav-text);
+  text-decoration: none;
+  font-size: 14px;
+  border-left: 3px solid transparent;
+}
+
+.app-nav__link:hover {
+  color: var(--color-nav-text-active);
+}
+
+.app-nav__link--active {
+  color: var(--color-nav-text-active);
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: var(--color-accent);
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px 32px;
+  max-width: 1200px;
+}
+
+.page h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.page__phase-note {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.connection-check,
+.admin-sections {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.connection-check h2,
+.admin-sections h2 {
+  font-size: 14px;
+  margin: 0 0 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.connection-check__error {
+  color: #b3261e;
+}
+
+.tag-chip {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #eef1f5;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}

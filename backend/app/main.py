@@ -1,0 +1,22 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config import get_settings
+from app.routers import health, projects, teams
+
+settings = get_settings()
+
+app = FastAPI(title="Org Gantt & Calendar API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+API_PREFIX = "/api/v1"
+app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(projects.router, prefix=API_PREFIX)
+app.include_router(teams.router, prefix=API_PREFIX)
