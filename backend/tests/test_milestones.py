@@ -126,3 +126,23 @@ def test_delete_milestone_blocked_by_dependency(
 
     response = client.delete(f"/api/v1/milestones/{milestone['id']}")
     assert response.status_code == 409
+
+
+def test_list_milestones_filter_by_owner_user(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post(
+        "/api/v1/milestones",
+        json=make_payload(seed_basics, title="Alice's milestone", owner_user_id=seed_basics["user_id"]),
+    )
+    client.post(
+        "/api/v1/milestones",
+        json=make_payload(
+            seed_basics, title="Bob's milestone", owner_user_id=seed_basics["other_user_id"]
+        ),
+    )
+
+    mine = client.get(
+        "/api/v1/milestones", params={"owner_user_id": seed_basics["user_id"]}
+    ).json()
+    assert [m["title"] for m in mine] == ["Alice's milestone"]

@@ -19,6 +19,7 @@ router = APIRouter(prefix="/milestones", tags=["milestones"])
 def list_milestones(
     project_id: int | None = None,
     team_id: int | None = None,
+    owner_user_id: int | None = None,
     status: MilestoneStatus | None = None,
     tag_id: int | None = None,
     date_from: dt.date | None = None,
@@ -30,6 +31,7 @@ def list_milestones(
         db,
         project_id=project_id,
         team_id=team_id,
+        owner_user_id=owner_user_id,
         status=status,
         tag_id=tag_id,
         date_from=date_from,

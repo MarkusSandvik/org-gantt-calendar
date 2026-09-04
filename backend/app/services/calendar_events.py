@@ -42,6 +42,7 @@ def list_calendar_events(
     db: Session,
     project_id: int | None = None,
     team_id: int | None = None,
+    owner_user_id: int | None = None,
     event_type: CalendarEventType | None = None,
     date_from: dt.datetime | None = None,
     date_to: dt.datetime | None = None,
@@ -52,6 +53,8 @@ def list_calendar_events(
         stmt = stmt.where(CalendarEvent.project_id == project_id)
     if team_id is not None:
         stmt = stmt.where(CalendarEvent.team_id == team_id)
+    if owner_user_id is not None:
+        stmt = stmt.where(CalendarEvent.owner_user_id == owner_user_id)
     if event_type is not None:
         stmt = stmt.where(CalendarEvent.event_type == event_type)
     if date_from is not None:

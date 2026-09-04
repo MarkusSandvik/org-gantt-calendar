@@ -1,5 +1,50 @@
 # Changelog
 
+## Phase 14 — My Tasks + polish (2026-09-05)
+
+The last phase of the original plan: a personal view of what the acting
+user owns or contributes to, plus a couple of app-wide rough edges
+closed out along the way.
+
+**Backend**
+- `GET /milestones` and `GET /calendar-events` both gained an
+  `owner_user_id` filter, mirroring the one activities already had since
+  Phase 4 — needed so My Tasks can ask each endpoint for "mine" directly
+  instead of fetching everything and filtering client-side. 2 new tests
+  (102/102 total).
+
+**Frontend**
+- `/my-tasks` (previously a placeholder) is now a real page, scoped to
+  whichever user is selected in "Acting as": **My Activities** (owned
+  activities merged with contributed-to ones, deduplicated, sorted by
+  end date — clicking a row jumps to a pre-filtered Admin > Activities
+  view, the same navigation pattern the Dashboard's "Attention Required"
+  list already used), **My Milestones** (owned, excluding
+  `completed`/`missed`, sorted by date), and **My Upcoming Events**
+  (owned, from today forward). Prompts the user to pick someone from
+  "Acting as" first if no user is selected yet, rather than silently
+  showing nothing.
+- Added a catch-all `*` route rendering a small "Page not found" page
+  (with a link back to the Dashboard) inside the app shell — previously
+  an unknown URL rendered a blank content area with no explanation.
+
+**Verified:** 102/102 backend tests pass, frontend type-checks clean.
+Checked in a browser as two different users: Emil showed his one owned
+activity plus one he only contributes to, correctly merged into a single
+sorted list; switching to Ola showed her four owned activities (delayed
+ones correctly badged), her one outstanding milestone, and an empty
+upcoming-events state. Clicking an activity row correctly navigated to
+`/admin/activities?q=<title>`. Navigating to a nonexistent URL rendered
+the new not-found page with the sidebar still intact, and its link
+correctly returned to the Dashboard.
+
+**Not yet implemented / deliberately deferred:** full Teams/Tags/Users
+admin CRUD (still read-only, supporting other forms' selects only, as
+established since Phase 2) and a Settings page — neither was ever a
+numbered phase in the original plan, and nothing in this phase depended
+on them. This closes the 14-phase v0.1 plan; further work is
+follow-on polish or new scope, not a gap in the original plan.
+
 ## Phase 13 — Export (2026-09-04)
 
 The counterpart to Phase 12: download the current plan as CSV or XLSX

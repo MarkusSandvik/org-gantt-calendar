@@ -19,6 +19,7 @@ router = APIRouter(prefix="/calendar-events", tags=["calendar-events"])
 def list_calendar_events(
     project_id: int | None = None,
     team_id: int | None = None,
+    owner_user_id: int | None = None,
     event_type: CalendarEventType | None = None,
     date_from: dt.datetime | None = None,
     date_to: dt.datetime | None = None,
@@ -29,6 +30,7 @@ def list_calendar_events(
         db,
         project_id=project_id,
         team_id=team_id,
+        owner_user_id=owner_user_id,
         event_type=event_type,
         date_from=date_from,
         date_to=date_to,

@@ -86,6 +86,7 @@ def list_milestones(
     db: Session,
     project_id: int | None = None,
     team_id: int | None = None,
+    owner_user_id: int | None = None,
     status: MilestoneStatus | None = None,
     tag_id: int | None = None,
     date_from: dt.date | None = None,
@@ -97,6 +98,8 @@ def list_milestones(
         stmt = stmt.where(Milestone.project_id == project_id)
     if team_id is not None:
         stmt = stmt.where(Milestone.team_id == team_id)
+    if owner_user_id is not None:
+        stmt = stmt.where(Milestone.owner_user_id == owner_user_id)
     if status is not None:
         stmt = stmt.where(Milestone.status == status)
     if date_from is not None:

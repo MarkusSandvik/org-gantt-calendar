@@ -117,3 +117,23 @@ def test_delete_calendar_event(client: TestClient, seed_basics: dict[str, int]) 
     response = client.delete(f"/api/v1/calendar-events/{created['id']}")
     assert response.status_code == 204
     assert client.get(f"/api/v1/calendar-events/{created['id']}").status_code == 404
+
+
+def test_list_calendar_events_filter_by_owner_user(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post(
+        "/api/v1/calendar-events",
+        json=make_payload(seed_basics, title="Alice's event", owner_user_id=seed_basics["user_id"]),
+    )
+    client.post(
+        "/api/v1/calendar-events",
+        json=make_payload(
+            seed_basics, title="Bob's event", owner_user_id=seed_basics["other_user_id"]
+        ),
+    )
+
+    mine = client.get(
+        "/api/v1/calendar-events", params={"owner_user_id": seed_basics["user_id"]}
+    ).json()
+    assert [e["title"] for e in mine] == ["Alice's event"]

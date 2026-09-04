@@ -74,8 +74,9 @@ PostgreSQL target.
 
 ## Current status
 
-v0.1 in progress — Phase 13 (export) is complete. See `CHANGELOG.md` for
-phase-by-phase progress.
+v0.1 complete — all 14 planned phases are done (My Tasks + polish, the
+final phase, landed in Phase 14). See `CHANGELOG.md` for phase-by-phase
+progress.
 
 ## Mocked authentication
 

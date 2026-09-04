@@ -11,6 +11,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Gantt } from "./pages/Gantt";
 import { MilestonesPage } from "./pages/milestones/MilestonesPage";
 import { MyTasks } from "./pages/MyTasks";
+import { NotFound } from "./pages/NotFound";
 
 export function App() {
   return (
@@ -29,6 +30,7 @@ export function App() {
           <Route path="baselines" element={<BaselinesAdmin />} />
           <Route path="import-export" element={<ImportExportAdmin />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );
