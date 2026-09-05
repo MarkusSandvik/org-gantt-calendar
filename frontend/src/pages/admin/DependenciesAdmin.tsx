@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
+import { usePermissions } from "../../hooks/usePermissions";
 import type {
   Activity,
   Dependency,
@@ -28,6 +29,8 @@ function decodeOption(value: string): { type: SchedulableType; id: number } | nu
 
 export function DependenciesAdmin() {
   const queryClient = useQueryClient();
+  const { isAdmin, isLeadOfAnyTeam } = usePermissions();
+  const canManageDependencies = isAdmin || isLeadOfAnyTeam;
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -102,6 +105,7 @@ export function DependenciesAdmin() {
 
   return (
     <div>
+      {canManageDependencies && (
       <form className="dependency-form" onSubmit={handleSubmit}>
         <select value={predecessor} onChange={(e) => setPredecessor(e.target.value)} required>
           <option value="">Predecessor...</option>
@@ -158,6 +162,7 @@ export function DependenciesAdmin() {
           Add dependency
         </button>
       </form>
+      )}
       {formError && <p className="form-error">{formError}</p>}
 
       {dependencies && dependencies.length === 0 && <p>No dependencies yet.</p>}
@@ -187,17 +192,19 @@ export function DependenciesAdmin() {
                 </td>
                 <td>{dep.lag_days}</td>
                 <td>
-                  <button
-                    type="button"
-                    className="button button--danger"
-                    onClick={() => {
-                      if (confirm(`Remove dependency "${dep.predecessor_label}" → "${dep.successor_label}"?`)) {
-                        deleteMutation.mutate(dep.id);
-                      }
-                    }}
-                  >
-                    Remove
-                  </button>
+                  {canManageDependencies && (
+                    <button
+                      type="button"
+                      className="button button--danger"
+                      onClick={() => {
+                        if (confirm(`Remove dependency "${dep.predecessor_label}" → "${dep.successor_label}"?`)) {
+                          deleteMutation.mutate(dep.id);
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

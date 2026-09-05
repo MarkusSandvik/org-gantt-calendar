@@ -18,14 +18,86 @@ export interface Team {
   sort_order: number;
 }
 
-export type UserRole = "viewer" | "editor" | "admin";
+export type GlobalRole = "user" | "admin";
+export type TeamRole = "member" | "lead";
+export type UserStatus = "pending" | "active" | "inactive" | "archived";
 
 export interface User {
   id: number;
   name: string;
   email: string;
-  role: UserRole;
-  active: boolean;
+  global_role: GlobalRole;
+  status: UserStatus;
+  last_login_at: string | null;
+}
+
+export interface MeTeamMembership {
+  team_id: number;
+  team_name: string;
+  team_role: TeamRole;
+}
+
+export interface Me {
+  id: number;
+  name: string;
+  email: string;
+  global_role: GlobalRole;
+  status: UserStatus;
+  last_login_at: string | null;
+  team_memberships: MeTeamMembership[];
+}
+
+export interface UserAdminTeamMembership {
+  team_id: number;
+  team_name: string;
+  team_role: TeamRole;
+}
+
+export interface UserAdmin {
+  id: number;
+  name: string;
+  email: string;
+  global_role: GlobalRole;
+  status: UserStatus;
+  last_login_at: string | null;
+  created_at: string;
+  team_memberships: UserAdminTeamMembership[];
+}
+
+export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
+
+export interface Invitation {
+  id: number;
+  email: string;
+  name: string;
+  team: { id: number; name: string } | null;
+  target_global_role: GlobalRole;
+  target_team_role: TeamRole | null;
+  invited_by: { id: number; name: string };
+  status: InvitationStatus;
+  expires_at: string;
+  created_at: string;
+  accepted_at: string | null;
+}
+
+export interface InvitationCreatePayload {
+  email: string;
+  name: string;
+  team_id: number | null;
+  target_global_role: GlobalRole;
+  target_team_role: TeamRole | null;
+}
+
+export interface InvitationCreateResponse extends Invitation {
+  invite_url: string | null;
+}
+
+export interface InvitationPreview {
+  email: string;
+  name: string;
+  team_name: string | null;
+  target_global_role: GlobalRole;
+  target_team_role: TeamRole | null;
 }
 
 export interface Tag {

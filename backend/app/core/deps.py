@@ -1,26 +1,26 @@
-from fastapi import Depends, Header, HTTPException
-from sqlalchemy import select
+from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models.user import User
+from app.services import auth as auth_service
+
+_settings = get_settings()
 
 
 def get_current_user(
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    session_token: str | None = Cookie(default=None, alias=_settings.session_cookie_name),
     db: Session = Depends(get_db),
 ) -> User:
-    """Mocked-auth current user. The frontend sends the "acting as" user's id
-    via X-User-Id; if omitted (e.g. direct API calls), fall back to the
-    first user so the API stays usable without a header. A real login can
-    replace this dependency later without changing any call sites."""
-    if x_user_id is not None:
-        user = db.get(User, x_user_id)
-        if user is None:
-            raise HTTPException(status_code=401, detail="Unknown X-User-Id")
-        return user
+    """Resolves the logged-in user from the HttpOnly session cookie. Every
+    router that previously depended on this (for attribution, and now for
+    authorization too) keeps working unchanged — only this function's
+    internals moved from the mocked X-User-Id header to a real session."""
+    if session_token is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-    user = db.scalars(select(User).order_by(User.id)).first()
+    user = auth_service.get_user_for_session_token(db, session_token)
     if user is None:
-        raise HTTPException(status_code=401, detail="No users exist yet")
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return user

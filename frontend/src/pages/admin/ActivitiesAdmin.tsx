@@ -14,11 +14,14 @@ import { FilterBar } from "../../components/filters/FilterBar";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
+import { usePermissions } from "../../hooks/usePermissions";
 import { ActivityFormModal } from "./ActivityFormModal";
 
 export function ActivitiesAdmin() {
   const queryClient = useQueryClient();
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
+  const { isAdmin, isLeadOfAnyTeam } = usePermissions();
+  const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -102,9 +105,11 @@ export function ActivitiesAdmin() {
           users={users ?? []}
           tags={tags ?? []}
         />
-        <button className="button button--primary" onClick={() => setModalActivity(null)}>
-          New Activity
-        </button>
+        {canCreateAnywhere && (
+          <button className="button button--primary" onClick={() => setModalActivity(null)}>
+            New Activity
+          </button>
+        )}
       </div>
 
       {isLoading && <p>Loading activities...</p>}

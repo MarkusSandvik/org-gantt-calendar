@@ -1,10 +1,10 @@
 import datetime as dt
 
-from sqlalchemy import Enum, ForeignKey, Integer, String
+from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
-from app.models.enums import TeamCategory
+from app.models.enums import TeamCategory, TeamRole
 
 
 class Team(TimestampMixin, Base):
@@ -24,10 +24,12 @@ class Team(TimestampMixin, Base):
 
 class TeamMembership(Base):
     __tablename__ = "team_memberships"
+    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_team_membership"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    team_role: Mapped[TeamRole] = mapped_column(Enum(TeamRole), default=TeamRole.MEMBER)
 
     team: Mapped["Team"] = relationship(back_populates="memberships")
     user: Mapped["User"] = relationship(back_populates="team_memberships")  # noqa: F821

@@ -19,7 +19,9 @@ TEMPLATE_CSV = (
 
 
 @router.get("/activities/template")
-def download_activity_import_template() -> Response:
+def download_activity_import_template(
+    current_user: User = Depends(get_current_user),
+) -> Response:
     return Response(
         content=TEMPLATE_CSV,
         media_type="text/csv",
@@ -29,10 +31,13 @@ def download_activity_import_template() -> Response:
 
 @router.post("/activities/preview", response_model=ImportPreviewResponse)
 async def preview_activity_import(
-    project_id: int, file: UploadFile, db: Session = Depends(get_db)
+    project_id: int,
+    file: UploadFile,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportPreviewResponse:
     content = await file.read()
-    return import_service.preview_import(db, project_id, file.filename or "", content)
+    return import_service.preview_import(db, project_id, file.filename or "", content, current_user)
 
 
 @router.post("/activities/apply", response_model=ImportApplyResponse)
@@ -43,6 +48,4 @@ async def apply_activity_import(
     current_user: User = Depends(get_current_user),
 ) -> ImportApplyResponse:
     content = await file.read()
-    return import_service.apply_import(
-        db, project_id, file.filename or "", content, created_by_id=current_user.id
-    )
+    return import_service.apply_import(db, project_id, file.filename or "", content, current_user)

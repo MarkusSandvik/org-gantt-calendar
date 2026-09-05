@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useCurrentUser, useLogout } from "../../hooks/useAuth";
 import { GlobalSearch } from "./GlobalSearch";
-import { UserSwitcher } from "./UserSwitcher";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -10,6 +10,31 @@ const NAV_ITEMS = [
   { to: "/my-tasks", label: "My Tasks" },
   { to: "/admin", label: "Admin" },
 ];
+
+function CurrentUserBadge() {
+  const { me } = useCurrentUser();
+  const logout = useLogout();
+
+  if (!me) return null;
+
+  const roleLabel =
+    me.global_role === "admin"
+      ? "Admin"
+      : me.team_memberships.some((m) => m.team_role === "lead")
+        ? "Lead"
+        : "Member";
+
+  return (
+    <div className="current-user-badge">
+      <span>
+        {me.name} <span className="current-user-badge__role">({roleLabel})</span>
+      </span>
+      <button className="button" onClick={() => logout.mutate()}>
+        Log out
+      </button>
+    </div>
+  );
+}
 
 export function AppShell() {
   return (
@@ -37,7 +62,7 @@ export function AppShell() {
       <main className="app-content">
         <div className="app-content__topbar">
           <GlobalSearch />
-          <UserSwitcher />
+          <CurrentUserBadge />
         </div>
         <Outlet />
       </main>

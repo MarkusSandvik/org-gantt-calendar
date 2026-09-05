@@ -1,5 +1,123 @@
 # Changelog
 
+## Role-based access control & authentication (2026-09-05)
+
+A second, independently-approved initiative built after v0.1 shipped:
+real authentication and an Admin/Lead/Member authorization model,
+replacing the mocked `X-User-Id` header that every phase above was built
+on. Planned and executed as its own 12-phase sequence — see
+`RBAC_PLAN.md` for the full architecture writeup (assessment, schema,
+authentication approach, and the risk/scope decisions below) and
+`AUTHORIZATION.md` for the live permission matrix. Summarized here by
+phase, in the same level of detail as the phases above.
+
+**Schema (Phase 2):** `User` gained `password_hash`, `global_role`
+(`USER`/`ADMIN`, replacing the unused `viewer`/`editor`/`admin` enum),
+`status` (`PENDING`/`ACTIVE`/`INACTIVE`/`ARCHIVED`, replacing a plain
+`active: bool`), and `last_login_at`. `TeamMembership` (present since
+Phase 1 of the base app but never populated) gained `team_role`
+(`MEMBER`/`LEAD`) and a unique `(team_id, user_id)` constraint. Three new
+tables: `invitations`, `auth_sessions`, `password_reset_tokens`. One
+Alembic migration, staged in three steps so SQLite's table-recreate-based
+`ALTER TABLE` could backfill `global_role`/`status` from the old
+`role`/`active` columns before dropping them, rather than losing data.
+
+**Authentication (Phase 3):** HttpOnly, `SameSite=Lax` session cookies
+backed by `auth_sessions` (only a SHA-256 hash of the token is ever
+stored) — chosen over JWTs so logout and deactivate-while-logged-in are
+a single row update, not a denylist. Argon2id password hashing. A
+double-submit CSRF cookie/header pair, enforced by middleware only on
+requests that already carry a session cookie (login/password-reset are
+explicitly exempt — they establish or bypass a session, they don't use
+one). An in-memory sliding-window login rate limiter. Generic
+"Invalid email or password" for both unknown-email and wrong-password.
+
+**Centralized authorization (Phase 4):** `app/core/permissions.py` — one
+named `can_*` resolver per resource/action, each taking the real ORM row
+(never a role string from the request), with `is_admin()` short-circuiting
+every check. Full matrix in `AUTHORIZATION.md`.
+
+**Protecting existing endpoints (Phase 5):** every mutating router gained
+a `permissions.require(...)` call — including several that had **no**
+identity resolution at all before this (activity delete, calendar-events
+CRUD, dependency create/delete, milestone create/delete). Cross-team
+scheduling impact is blocked outright: a Lead's `/scheduling/apply` or
+`/undo` that would touch another team's activity/milestone or an
+org-wide milestone returns 409 with the full impact list instead of
+silently applying the in-team part (Section 7 of `RBAC_PLAN.md`). Import
+now checks per-row team permission, not just parse validity.
+
+**Invitations (Phase 6):** `POST /invitations` derives the caller's
+allowed scope server-side — a Lead's request is checked against their
+own team and forced to `MEMBER`, never trusting the payload's
+`team_id`/`target_team_role` even if it claims otherwise. Tokens are
+`secrets.token_urlsafe(32)`, only their SHA-256 hash persisted,
+single-use, time-limited. `POST /invitations/accept` creates the account
+and logs the user straight in.
+
+**User administration (Phase 7):** `GET /users/admin` (Admin: everyone;
+Lead: their own team's Members only), deactivate/reactivate,
+`PUT/DELETE .../team-memberships` (promote/demote/move — promoting to
+Lead of a new team auto-demotes any previous Lead team, since a user
+leads at most one), and `PATCH .../global-role` — all Admin-only except
+deactivate/reactivate, which a Lead can do for their own team's Members.
+
+**Frontend login (Phase 8):** `/login`, `/accept-invitation`,
+`/reset-password` — all public, outside the new `RequireAuth` route
+guard wrapping the rest of the app. The old "Acting as" impersonation
+switcher is gone entirely, replaced by real login/logout and a
+`useCurrentUser()` hook backed by TanStack Query. `api/client.ts` no
+longer sends `X-User-Id`; it sends cookies (`credentials: "include"`)
+and echoes the CSRF cookie back as a header on mutating requests. Admin
+> Users is a new page (invite modal, pending-invitations list with
+revoke, per-user deactivate/reactivate, and — Admin only — inline
+team-membership and global-role editing).
+
+**Permission-aware UI (Phase 9):** a `usePermissions()` hook mirrors the
+backend's resolvers. The Admin "Users" tab is hidden for plain Members;
+"New Activity"/"New Milestone" buttons only render for someone who can
+create somewhere; `ActivityFormModal`/`MilestoneFormModal` disable
+fields down to nothing (view-only, with an explanatory hint) or down to
+just status/progress (assigned Members) depending on who's looking;
+Gantt bars and milestone diamonds only open the reschedule modal for
+someone with edit rights on that item; the comment box hides when the
+viewer isn't allowed to comment. Every one of these is a convenience —
+the backend re-checks regardless.
+
+**Audit events (Phase 10):** invite/revoke/activate/deactivate/role-change
+/membership-add/membership-remove/password-reset all write `AuditLog`
+rows via the existing `write_field_changes()` helper — no schema change
+needed, since it was already fully generic. "Failed privileged action"
+(the one event Section 17 marks optional) is deliberately not
+implemented — see `RBAC_PLAN.md`'s note on why a global exception
+handler for it would have broken the test suite's DB-session isolation.
+
+**Tests (Phase 11):** `test_auth.py`, `test_permissions.py` (unit tests
+against the resolvers directly), `test_authorization_endpoints.py` (the
+full Member/Lead/Admin/security matrix from Section 23, exercised
+through real HTTP requests), `test_invitations.py`, `test_user_admin.py`,
+`test_audit_events.py`, plus `test_rbac_schema.py` from Phase 2 — 98 new
+tests, taking the suite from 102 to 200. Two Section 25 cases (an
+activity with no owner team or user) are covered explicitly: viewable by
+everyone, editable by nobody but Admin, never a 500.
+
+**Verified:** 200/200 backend tests pass, including every scenario in
+`AUTHORIZATION.md`'s matrix. Checked end-to-end in a browser: logged in
+as the seeded Admin,
+invited a Member via the dev-mode invite-link banner, accepted that
+invitation (auto-logged-in, correct role shown), logged in as a Member
+and confirmed an unassigned activity renders fully read-only with the
+correct explanatory hint and no Save/Delete controls, and confirmed
+`/admin/users` and the "New Activity" button are correctly absent for
+that Member.
+
+**Not yet implemented / deliberately deferred (see `RBAC_PLAN.md`):** a
+persisted pending-approval object for cross-team scheduling changes
+(the hard block is fully implemented; the softer "queue it for Admin to
+approve" workflow is optional follow-on scope); Tag management (no
+mutation endpoints exist for tags at all, RBAC or otherwise); Team
+management UI (still admin-read-only, as before this initiative).
+
 ## Phase 14 — My Tasks + polish (2026-09-05)
 
 The last phase of the original plan: a personal view of what the acting

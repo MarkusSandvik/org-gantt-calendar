@@ -11,6 +11,7 @@ interface ActivityLogPanelProps {
   entityId: number;
   teams?: Team[];
   users?: User[];
+  canComment?: boolean;
 }
 
 type TimelineEntry =
@@ -45,6 +46,7 @@ export function ActivityLogPanel({
   entityId,
   teams,
   users,
+  canComment = true,
 }: ActivityLogPanelProps) {
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
@@ -141,22 +143,24 @@ export function ActivityLogPanel({
         )}
       </ul>
 
-      <div className="activity-log__add">
-        <textarea
-          rows={2}
-          placeholder="Add a note..."
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        <button
-          type="button"
-          className="button"
-          disabled={!note.trim() || addCommentMutation.isPending}
-          onClick={() => addCommentMutation.mutate({ body: note.trim() })}
-        >
-          Add note
-        </button>
-      </div>
+      {canComment && (
+        <div className="activity-log__add">
+          <textarea
+            rows={2}
+            placeholder="Add a note..."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <button
+            type="button"
+            className="button"
+            disabled={!note.trim() || addCommentMutation.isPending}
+            onClick={() => addCommentMutation.mutate({ body: note.trim() })}
+          >
+            Add note
+          </button>
+        </div>
+      )}
     </div>
   );
 }

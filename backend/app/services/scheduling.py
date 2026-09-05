@@ -7,11 +7,13 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core import permissions
 from app.models.activity import Activity
 from app.models.audit_log import AuditLog
 from app.models.dependency import Dependency
 from app.models.enums import SchedulableType
 from app.models.milestone import Milestone
+from app.models.user import User
 from app.schemas.scheduling import (
     ScheduleChangeItem,
     SchedulingApplyResponse,
@@ -145,9 +147,54 @@ def _build_change_items(
     return items
 
 
+def _entity_team_id(db: Session, entity_type: SchedulableType, entity_id: int) -> int | None:
+    return permissions.schedulable_team_id(db, entity_type.value, entity_id)
+
+
+def _authorize_schedule_items(
+    db: Session, user: User, entities: list[tuple[SchedulableType, int]]
+) -> None:
+    """Admin may apply/undo anything. A Lead may only touch entities that
+    belong to their own team — an org-wide milestone (team_id is None)
+    counts as belonging to no team a Lead can claim. Rather than silently
+    applying the in-team part and dropping the rest, a change that reaches
+    outside the Lead's team is rejected outright with the full list of
+    what it would have touched, so nothing is applied halfway (Section 7:
+    'do NOT silently apply those external changes')."""
+    if permissions.is_admin(user):
+        return
+
+    led_team_id = permissions.get_led_team_id(db, user)
+    if led_team_id is None:
+        raise HTTPException(
+            status_code=403, detail="Only a team Lead or Admin can change the schedule."
+        )
+
+    external = [
+        {"entity_type": entity_type.value, "entity_id": entity_id}
+        for entity_type, entity_id in entities
+        if _entity_team_id(db, entity_type, entity_id) != led_team_id
+    ]
+    if external:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    "This change affects another team's schedule (or an "
+                    "organization-wide milestone) and requires Admin approval."
+                ),
+                "external_items": external,
+            },
+        )
+
+
 def preview_schedule_change(
-    db: Session, payload: SchedulingChangeRequest
+    db: Session, payload: SchedulingChangeRequest, user: User
 ) -> list[ScheduleChangeItem]:
+    if not permissions.is_admin(user) and permissions.get_led_team_id(db, user) is None:
+        raise HTTPException(
+            status_code=403, detail="Only a team Lead or Admin can preview scheduling changes."
+        )
     _validate_request(payload)
     _get_root_or_404(db, payload.entity_type, payload.entity_id)
 
@@ -160,7 +207,7 @@ def preview_schedule_change(
 
 
 def apply_schedule_change(
-    db: Session, payload: SchedulingChangeRequest, user_id: int
+    db: Session, payload: SchedulingChangeRequest, user: User
 ) -> SchedulingApplyResponse:
     _validate_request(payload)
     _get_root_or_404(db, payload.entity_type, payload.entity_id)
@@ -175,6 +222,9 @@ def apply_schedule_change(
     if not items:
         return SchedulingApplyResponse(change_group_id="", changes=[])
 
+    _authorize_schedule_items(db, user, [(item.entity_type, item.entity_id) for item in items])
+
+    user_id = user.id
     change_group_id = uuid.uuid4().hex
     for item in items:
         if item.entity_type == SchedulableType.ACTIVITY:
@@ -228,7 +278,7 @@ def apply_schedule_change(
 
 
 def undo_schedule_change(
-    db: Session, change_group_id: str, user_id: int
+    db: Session, change_group_id: str, user: User
 ) -> list[ScheduleChangeItem]:
     logs = db.scalars(
         select(AuditLog).where(AuditLog.change_group_id == change_group_id)
@@ -240,6 +290,13 @@ def undo_schedule_change(
     for log in logs:
         by_entity.setdefault((log.entity_type, log.entity_id), []).append(log)
 
+    _authorize_schedule_items(
+        db,
+        user,
+        [(SchedulableType(entity_type), entity_id) for entity_type, entity_id in by_entity],
+    )
+
+    user_id = user.id
     undo_group_id = uuid.uuid4().hex
     reverted_items: list[ScheduleChangeItem] = []
 

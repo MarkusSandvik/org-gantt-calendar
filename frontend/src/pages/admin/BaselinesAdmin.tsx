@@ -7,6 +7,7 @@ import type {
   BaselineCreatePayload,
   Project,
 } from "../../api/types";
+import { usePermissions } from "../../hooks/usePermissions";
 import { BaselineFormModal } from "./BaselineFormModal";
 
 function formatDateTime(iso: string): string {
@@ -32,6 +33,7 @@ function formatDelta(deltaDays: number): string {
 
 export function BaselinesAdmin() {
   const queryClient = useQueryClient();
+  const { canManageBaselines } = usePermissions();
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -79,9 +81,11 @@ export function BaselinesAdmin() {
           A baseline snapshots every activity's and milestone's currently planned dates, so
           you can later compare the original plan against where things actually stand.
         </p>
-        <button className="button button--primary" onClick={() => setShowForm(true)}>
-          Set Baseline
-        </button>
+        {canManageBaselines && (
+          <button className="button button--primary" onClick={() => setShowForm(true)}>
+            Set Baseline
+          </button>
+        )}
       </div>
 
       {baselines && baselines.length === 0 && <p>No baselines yet.</p>}

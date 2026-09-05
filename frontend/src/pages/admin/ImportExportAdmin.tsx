@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { api, ApiError } from "../../api/client";
+import { usePermissions } from "../../hooks/usePermissions";
 import type {
   ImportApplyResponse,
   ImportPreviewResponse,
@@ -59,6 +60,8 @@ function ImportResultTable({ rows }: { rows: ImportRowResult[] }) {
 
 export function ImportExportAdmin() {
   const queryClient = useQueryClient();
+  const { isAdmin, isLeadOfAnyTeam } = usePermissions();
+  const canImport = isAdmin || isLeadOfAnyTeam;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
@@ -154,6 +157,8 @@ export function ImportExportAdmin() {
         </a>
       </div>
 
+      {canImport && (
+      <>
       <h2>Import</h2>
       <p className="page__phase-note">
         Bulk-create activities from a CSV or XLSX file. Nothing is written to
@@ -220,6 +225,8 @@ export function ImportExportAdmin() {
           </p>
           <ImportResultTable rows={applyResult.rows} />
         </div>
+      )}
+      </>
       )}
     </div>
   );

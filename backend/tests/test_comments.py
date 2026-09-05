@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from tests.conftest import SEED_USER_PASSWORD
+
 
 def make_activity(client: TestClient, seed_basics: dict[str, int], **overrides) -> dict:
     payload = {
@@ -16,14 +18,14 @@ def make_activity(client: TestClient, seed_basics: dict[str, int], **overrides) 
 
 
 def test_create_and_list_activity_comment(
-    client: TestClient, seed_basics: dict[str, int]
+    client: TestClient, seed_basics: dict[str, int], as_user
 ) -> None:
     activity = make_activity(client, seed_basics)
+    as_user(client, "alice@example.org", SEED_USER_PASSWORD)
 
     response = client.post(
         f"/api/v1/activities/{activity['id']}/comments",
         json={"body": "PCB sent to production."},
-        headers={"X-User-Id": str(seed_basics["user_id"])},
     )
     assert response.status_code == 201, response.text
     body = response.json()

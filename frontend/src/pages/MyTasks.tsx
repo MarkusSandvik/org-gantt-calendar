@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import type { Activity, CalendarEvent, Milestone, Project, User } from "../api/types";
+import type { Activity, CalendarEvent, Milestone, Project } from "../api/types";
 import { MilestoneStatusBadge } from "../components/MilestoneStatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { StatusBadge } from "../components/StatusBadge";
-import { useCurrentUserStore } from "../store/currentUser";
+import { useCurrentUser } from "../hooks/useAuth";
 import { formatISODate } from "../utils/date";
 
 const EVENT_DATETIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -25,13 +25,8 @@ function mergeById(...lists: Activity[][]): Activity[] {
 
 export function MyTasks() {
   const navigate = useNavigate();
-  const userId = useCurrentUserStore((s) => s.userId);
-
-  const { data: users } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => api.get<User[]>("/users"),
-  });
-  const me = users?.find((u) => u.id === userId);
+  const { me } = useCurrentUser();
+  const userId = me?.id;
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -77,15 +72,7 @@ export function MyTasks() {
   );
 
   if (!userId) {
-    return (
-      <div className="page">
-        <h1>My Tasks</h1>
-        <p>
-          Pick a user from "Acting as" in the top bar to see their activities, milestones, and
-          upcoming events.
-        </p>
-      </div>
-    );
+    return <p>Loading...</p>;
   }
 
   return (

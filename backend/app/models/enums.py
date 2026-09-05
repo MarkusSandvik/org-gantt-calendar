@@ -1,10 +1,33 @@
 import enum
 
 
-class UserRole(str, enum.Enum):
-    VIEWER = "viewer"
-    EDITOR = "editor"
+class GlobalRole(str, enum.Enum):
+    """Organization-wide role. USER covers both Lead and plain Member —
+    Lead authority is team-scoped and lives on TeamMembership.team_role,
+    not here, since a user can lead at most one team but be a plain
+    member of others."""
+
+    USER = "user"
     ADMIN = "admin"
+
+
+class TeamRole(str, enum.Enum):
+    MEMBER = "member"
+    LEAD = "lead"
+
+
+class UserStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ARCHIVED = "archived"
+
+
+class InvitationStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
 
 
 class TeamCategory(str, enum.Enum):

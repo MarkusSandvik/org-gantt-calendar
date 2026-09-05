@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.activity import Activity
+from app.models.enums import UserStatus
 from app.models.milestone import Milestone
 from app.models.tag import Tag
 from app.models.team import Team
@@ -62,12 +63,14 @@ def global_search(
 
     user_stmt = (
         select(User)
-        .where(User.name.ilike(pattern), User.active.is_(True))
+        .where(User.name.ilike(pattern), User.status == UserStatus.ACTIVE)
         .order_by(User.name)
         .limit(RESULTS_PER_TYPE)
     )
     users = db.scalars(user_stmt).all()
     for u in users:
-        results.append(SearchResult(type="user", id=u.id, label=u.name, subtitle=u.role.value))
+        results.append(
+            SearchResult(type="user", id=u.id, label=u.name, subtitle=u.global_role.value)
+        )
 
     return results

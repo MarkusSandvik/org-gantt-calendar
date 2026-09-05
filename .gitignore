@@ -19,3 +19,6 @@ Thumbs.db
 
 # Dev server scripts
 .dev-pids.json
+
+# Secrets
+backend/.env

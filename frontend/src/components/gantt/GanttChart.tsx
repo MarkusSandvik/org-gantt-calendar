@@ -5,6 +5,7 @@ import { api } from "../../api/client";
 import type { Activity, Dependency, Milestone, Project, Tag, Team, User } from "../../api/types";
 import { FilterBar } from "../filters/FilterBar";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
+import { usePermissions } from "../../hooks/usePermissions";
 import { DependencyArrows } from "./DependencyArrows";
 import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
@@ -75,6 +76,7 @@ export function GanttChart() {
   const [zoom, setZoom] = useState<ZoomLevel>("month");
   const [reschedule, setReschedule] = useState<RescheduleTarget | null>(null);
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
+  const { canEditActivity, canManageMilestone } = usePermissions();
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -252,14 +254,17 @@ export function GanttChart() {
                           milestone={m}
                           rangeStart={range.start}
                           zoom={zoom}
-                          onClick={() =>
-                            setReschedule({
-                              entityType: "milestone",
-                              entityId: m.id,
-                              label: m.title,
-                              startDate: m.date,
-                              endDate: m.date,
-                            })
+                          onClick={
+                            canManageMilestone(m)
+                              ? () =>
+                                  setReschedule({
+                                    entityType: "milestone",
+                                    entityId: m.id,
+                                    label: m.title,
+                                    startDate: m.date,
+                                    endDate: m.date,
+                                  })
+                              : undefined
                           }
                         />
                       </div>
@@ -286,14 +291,17 @@ export function GanttChart() {
                           activity={activity}
                           rangeStart={range.start}
                           zoom={zoom}
-                          onClick={() =>
-                            setReschedule({
-                              entityType: "activity",
-                              entityId: activity.id,
-                              label: activity.title,
-                              startDate: activity.start_date,
-                              endDate: activity.end_date,
-                            })
+                          onClick={
+                            canEditActivity(activity)
+                              ? () =>
+                                  setReschedule({
+                                    entityType: "activity",
+                                    entityId: activity.id,
+                                    label: activity.title,
+                                    startDate: activity.start_date,
+                                    endDate: activity.end_date,
+                                  })
+                              : undefined
                           }
                         />
                       </div>

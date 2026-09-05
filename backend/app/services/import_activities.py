@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core import permissions
 from app.models.enums import ActivityStatus, Priority, TaggableType
 from app.models.tag import Tag, TagAssociation
 from app.models.team import Team
@@ -129,7 +130,9 @@ class _ParsedRow:
         )
 
 
-def _validate_row(db: Session, project_id: int, row_number: int, raw: dict[str, str]) -> _ParsedRow:
+def _validate_row(
+    db: Session, project_id: int, row_number: int, raw: dict[str, str], importing_user: User
+) -> _ParsedRow:
     parsed = _ParsedRow(row_number, raw)
     errors = parsed.errors
 
@@ -226,6 +229,10 @@ def _validate_row(db: Session, project_id: int, row_number: int, raw: dict[str, 
     if unknown_tags:
         errors.append(f"unknown tag(s): {', '.join(unknown_tags)}")
 
+    if not errors and not permissions.can_create_activity(db, importing_user, owner_team_id):
+        team_label = owner_team_raw or "(no team)"
+        errors.append(f"you don't have permission to create activities for team: {team_label}")
+
     if not errors:
         parsed.payload = ActivityCreate(
             project_id=project_id,
@@ -245,17 +252,20 @@ def _validate_row(db: Session, project_id: int, row_number: int, raw: dict[str, 
     return parsed
 
 
-def _validate_all(db: Session, project_id: int, filename: str, content: bytes) -> list[_ParsedRow]:
+def _validate_all(
+    db: Session, project_id: int, filename: str, content: bytes, importing_user: User
+) -> list[_ParsedRow]:
     raw_rows = parse_upload(filename, content)
     return [
-        _validate_row(db, project_id, i + 1, raw_row) for i, raw_row in enumerate(raw_rows)
+        _validate_row(db, project_id, i + 1, raw_row, importing_user)
+        for i, raw_row in enumerate(raw_rows)
     ]
 
 
 def preview_import(
-    db: Session, project_id: int, filename: str, content: bytes
+    db: Session, project_id: int, filename: str, content: bytes, importing_user: User
 ) -> ImportPreviewResponse:
-    parsed_rows = _validate_all(db, project_id, filename, content)
+    parsed_rows = _validate_all(db, project_id, filename, content, importing_user)
     results = [p.to_result() for p in parsed_rows]
     error_count = sum(1 for r in results if r.errors)
     return ImportPreviewResponse(
@@ -264,19 +274,22 @@ def preview_import(
 
 
 def apply_import(
-    db: Session, project_id: int, filename: str, content: bytes, created_by_id: int
+    db: Session, project_id: int, filename: str, content: bytes, importing_user: User
 ) -> ImportApplyResponse:
     # Re-parses and re-validates rather than trusting a client-submitted
     # preview, matching the scheduling engine's preview/apply pattern —
-    # the server never commits data it hasn't independently checked.
-    parsed_rows = _validate_all(db, project_id, filename, content)
+    # the server never commits data it hasn't independently checked. This
+    # includes re-checking permission per row, not just parsing: a Lead
+    # can't import activities into another team just by omitting the
+    # preview step.
+    parsed_rows = _validate_all(db, project_id, filename, content, importing_user)
     results: list[ImportRowResult] = []
     created_count = 0
     for parsed in parsed_rows:
         if parsed.payload is None:
             results.append(parsed.to_result())
             continue
-        created = activity_service.create_activity(db, parsed.payload, created_by_id)
+        created = activity_service.create_activity(db, parsed.payload, importing_user.id)
         created_count += 1
         results.append(parsed.to_result(activity_id=created.id))
     return ImportApplyResponse(

@@ -12,6 +12,7 @@ import type {
   User,
 } from "../../api/types";
 import { MilestoneStatusBadge } from "../../components/MilestoneStatusBadge";
+import { usePermissions } from "../../hooks/usePermissions";
 import { MilestoneFormModal } from "./MilestoneFormModal";
 
 const STATUS_FILTER_OPTIONS: MilestoneStatus[] = [
@@ -24,6 +25,8 @@ const STATUS_FILTER_OPTIONS: MilestoneStatus[] = [
 
 export function MilestonesPage() {
   const queryClient = useQueryClient();
+  const { isAdmin, isLeadOfAnyTeam } = usePermissions();
+  const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -135,9 +138,11 @@ export function MilestonesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button className="button button--primary" onClick={() => setModalMilestone(null)}>
-          New Milestone
-        </button>
+        {canCreateAnywhere && (
+          <button className="button button--primary" onClick={() => setModalMilestone(null)}>
+            New Milestone
+          </button>
+        )}
       </div>
 
       {isLoading && <p>Loading milestones...</p>}

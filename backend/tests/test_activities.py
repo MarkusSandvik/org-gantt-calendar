@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from tests.conftest import SEED_USER_PASSWORD
+
 
 def make_payload(seed_basics: dict[str, int], **overrides) -> dict:
     payload = {
@@ -20,12 +22,9 @@ def make_payload(seed_basics: dict[str, int], **overrides) -> dict:
     return payload
 
 
-def test_create_activity(client: TestClient, seed_basics: dict[str, int]) -> None:
-    response = client.post(
-        "/api/v1/activities",
-        json=make_payload(seed_basics),
-        headers={"X-User-Id": str(seed_basics["user_id"])},
-    )
+def test_create_activity(client: TestClient, seed_basics: dict[str, int], as_user) -> None:
+    as_user(client, "alice@example.org", SEED_USER_PASSWORD)
+    response = client.post("/api/v1/activities", json=make_payload(seed_basics))
     assert response.status_code == 201, response.text
     body = response.json()
     assert body["title"] == "Pressure Housing Design"

@@ -291,6 +291,47 @@ body {
   margin-left: 6px;
 }
 
+.tag-chip__remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 0 0 4px;
+  line-height: 1;
+}
+
+.tag-chip--add {
+  cursor: pointer;
+  border: 1px dashed var(--color-border);
+  background: none;
+}
+
+.add-membership-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.add-membership-control select {
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+/* Current-user badge (top bar) */
+
+.current-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.current-user-badge__role {
+  color: var(--color-text-muted);
+}
+
 /* Admin tabs */
 
 .admin-tabs {
@@ -630,6 +671,65 @@ body {
 
 .modal-actions__spacer {
   flex: 1;
+}
+
+/* Auth pages (login, accept invitation, reset password) */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+}
+
+.auth-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 32px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.auth-card h1 {
+  font-size: 18px;
+  margin: 0 0 20px;
+}
+
+.auth-card form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+.auth-card form input {
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.auth-card__submit {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.auth-card__link {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
 }
 
 /* Activity log */

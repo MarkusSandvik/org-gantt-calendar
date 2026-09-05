@@ -1,7 +1,13 @@
-"""Idempotent demo data seed. Run with: python -m app.db.seed"""
+"""Idempotent demo data seed. Run with: python -m app.db.seed
+
+Seeded accounts all share one development-only password (see
+Settings.dev_seed_password / APP_DEV_SEED_PASSWORD) — never use this
+seed script against anything but a local/dev database."""
 
 import datetime as dt
 
+from app.core.config import get_settings
+from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.activity import Activity, ActivityContributor
 from app.models.calendar_event import CalendarEvent
@@ -10,17 +16,19 @@ from app.models.enums import (
     ActivityStatus,
     CalendarEventType,
     DependencyType,
+    GlobalRole,
     MilestoneStatus,
     Priority,
     SchedulableType,
     TaggableType,
     TeamCategory,
-    UserRole,
+    TeamRole,
+    UserStatus,
 )
 from app.models.milestone import Milestone
 from app.models.project import Project
 from app.models.tag import Tag, TagAssociation
-from app.models.team import Team
+from app.models.team import Team, TeamMembership
 from app.models.user import User
 
 TEAM_DEFS = [
@@ -52,12 +60,43 @@ TAG_NAMES = [
     "External",
 ]
 
+# (name, email, global_role) — the original five demo users. Team
+# memberships for these are assigned below, separately from the newer
+# role-descriptive example accounts Section 21 of the RBAC plan asks for.
 USER_DEFS = [
-    ("Markus", "markus@example.org", UserRole.ADMIN),
-    ("Kari", "kari@example.org", UserRole.EDITOR),
-    ("Ola", "ola@example.org", UserRole.EDITOR),
-    ("Thomas", "thomas@example.org", UserRole.EDITOR),
-    ("Emil", "emil@example.org", UserRole.VIEWER),
+    ("Markus", "markus@example.org", GlobalRole.ADMIN),
+    ("Kari", "kari@example.org", GlobalRole.USER),
+    ("Ola", "ola@example.org", GlobalRole.USER),
+    ("Thomas", "thomas@example.org", GlobalRole.USER),
+    ("Emil", "emil@example.org", GlobalRole.USER),
+]
+
+# (name, email, global_role) — role-descriptive accounts for exercising
+# the Admin/Lead/Member hierarchy in local development.
+EXAMPLE_USER_DEFS = [
+    ("Admin User", "admin@example.local", GlobalRole.ADMIN),
+    ("Embedded Lead", "embedded.lead@example.local", GlobalRole.USER),
+    ("Mechanical Lead", "mechanical.lead@example.local", GlobalRole.USER),
+    ("Embedded Member", "embedded.member@example.local", GlobalRole.USER),
+    ("Mechanical Member", "mechanical.member@example.local", GlobalRole.USER),
+]
+
+# (email, team_name, team_role) memberships for the accounts above.
+EXAMPLE_MEMBERSHIP_DEFS = [
+    ("embedded.lead@example.local", "Embedded", TeamRole.LEAD),
+    ("mechanical.lead@example.local", "Mechanical", TeamRole.LEAD),
+    ("embedded.member@example.local", "Embedded", TeamRole.MEMBER),
+    ("mechanical.member@example.local", "Mechanical", TeamRole.MEMBER),
+]
+
+# (name, team_name) memberships for the original five demo users, so
+# Lead/Member-scoped authorization has real data to check against for
+# them too, not just the newer example accounts.
+LEGACY_MEMBERSHIP_DEFS = [
+    ("Kari", "Electrical", TeamRole.MEMBER),
+    ("Ola", "Mechanical", TeamRole.MEMBER),
+    ("Thomas", "Embedded", TeamRole.MEMBER),
+    ("Emil", "Perception", TeamRole.MEMBER),
 ]
 
 
@@ -94,12 +133,47 @@ def seed() -> None:
             tags[name] = tag
         db.flush()
 
+        dev_password_hash = hash_password(get_settings().dev_seed_password)
+
         users = {}
-        for name, email, role in USER_DEFS:
-            user = User(name=name, email=email, role=role)
+        for name, email, global_role in USER_DEFS:
+            user = User(
+                name=name,
+                email=email,
+                global_role=global_role,
+                status=UserStatus.ACTIVE,
+                password_hash=dev_password_hash,
+            )
             db.add(user)
             users[name] = user
+
+        users_by_email = {}
+        for name, email, global_role in EXAMPLE_USER_DEFS:
+            user = User(
+                name=name,
+                email=email,
+                global_role=global_role,
+                status=UserStatus.ACTIVE,
+                password_hash=dev_password_hash,
+            )
+            db.add(user)
+            users_by_email[email] = user
         db.flush()
+
+        for name, team_name, team_role in LEGACY_MEMBERSHIP_DEFS:
+            db.add(
+                TeamMembership(
+                    team_id=teams[team_name].id, user_id=users[name].id, team_role=team_role
+                )
+            )
+        for email, team_name, team_role in EXAMPLE_MEMBERSHIP_DEFS:
+            db.add(
+                TeamMembership(
+                    team_id=teams[team_name].id,
+                    user_id=users_by_email[email].id,
+                    team_role=team_role,
+                )
+            )
 
         def tag_entity(entity_type: TaggableType, entity_id: int, *tag_names: str) -> None:
             for tn in tag_names:
@@ -355,6 +429,10 @@ def seed() -> None:
 
         db.commit()
         print("Seed complete.")
+        print(
+            f"All seeded accounts share the development-only password: "
+            f"{get_settings().dev_seed_password!r} (see APP_DEV_SEED_PASSWORD)."
+        )
     finally:
         db.close()
 

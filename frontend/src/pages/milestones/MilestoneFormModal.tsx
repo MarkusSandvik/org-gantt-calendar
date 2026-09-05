@@ -8,6 +8,7 @@ import type {
   User,
 } from "../../api/types";
 import { ActivityLogPanel } from "../../components/ActivityLogPanel";
+import { usePermissions } from "../../hooks/usePermissions";
 
 const STATUS_OPTIONS: MilestoneStatus[] = [
   "not_started",
@@ -74,6 +75,11 @@ export function MilestoneFormModal({
   );
   const [reason, setReason] = useState("");
 
+  const { canManageMilestone, canCommentOnMilestone } = usePermissions();
+  // Creating is already gated by the "New Milestone" button's own
+  // visibility; an existing milestone re-checks against its team.
+  const canEdit = milestone ? canManageMilestone(milestone) : true;
+
   function toggleTag(tagId: number) {
     setForm((f) => ({
       ...f,
@@ -93,10 +99,18 @@ export function MilestoneFormModal({
             onSubmit(reason.trim() ? { ...form, reason: reason.trim() } : form);
           }}
         >
+          {!canEdit && (
+            <p className="form-hint">
+              You can view this milestone but can't make changes — only its team's Lead or
+              an Admin can.
+            </p>
+          )}
+
           <label>
             Title
             <input
               required
+              disabled={!canEdit}
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
@@ -106,6 +120,7 @@ export function MilestoneFormModal({
             Description
             <textarea
               rows={3}
+              disabled={!canEdit}
               value={form.description ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
@@ -117,7 +132,7 @@ export function MilestoneFormModal({
               <input
                 type="date"
                 required
-                disabled={hasDependencies}
+                disabled={!canEdit || hasDependencies}
                 value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
               />
@@ -125,6 +140,7 @@ export function MilestoneFormModal({
             <label>
               Status
               <select
+                disabled={!canEdit}
                 value={form.status}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, status: e.target.value as MilestoneStatus }))
@@ -138,7 +154,7 @@ export function MilestoneFormModal({
               </select>
             </label>
           </div>
-          {hasDependencies && (
+          {hasDependencies && canEdit && (
             <p className="form-hint">
               This milestone has dependency links, so its date is rescheduled from the Gantt
               (click its diamond) to preview the impact on dependent items before applying.
@@ -149,6 +165,7 @@ export function MilestoneFormModal({
             <label>
               Team
               <select
+                disabled={!canEdit}
                 value={form.team_id ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -168,6 +185,7 @@ export function MilestoneFormModal({
             <label>
               Owner
               <select
+                disabled={!canEdit}
                 value={form.owner_user_id ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -186,7 +204,7 @@ export function MilestoneFormModal({
             </label>
           </div>
 
-          <fieldset>
+          <fieldset disabled={!canEdit}>
             <legend>Tags</legend>
             {tags.map((t) => (
               <label key={t.id} className="checkbox-label">
@@ -200,7 +218,7 @@ export function MilestoneFormModal({
             ))}
           </fieldset>
 
-          {milestone && (
+          {milestone && canEdit && (
             <label>
               Reason for this change (optional)
               <input
@@ -214,7 +232,7 @@ export function MilestoneFormModal({
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 
           <div className="modal-actions">
-            {milestone && onDelete && (
+            {milestone && onDelete && canEdit && (
               <button type="button" className="button button--danger" onClick={onDelete}>
                 Delete
               </button>
@@ -223,9 +241,11 @@ export function MilestoneFormModal({
             <button type="button" className="button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary" disabled={submitting}>
-              {milestone ? "Save changes" : "Create milestone"}
-            </button>
+            {canEdit && (
+              <button type="submit" className="button button--primary" disabled={submitting}>
+                {milestone ? "Save changes" : "Create milestone"}
+              </button>
+            )}
           </div>
         </form>
 
@@ -236,6 +256,7 @@ export function MilestoneFormModal({
             entityId={milestone.id}
             teams={teams}
             users={users}
+            canComment={canCommentOnMilestone(milestone)}
           />
         )}
       </div>
