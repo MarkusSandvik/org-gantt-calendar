@@ -83,7 +83,9 @@ def update_activity(
     current_user: User = Depends(get_current_user),
 ) -> ActivityRead:
     activity = _get_activity_or_404(db, activity_id)
-    changed_fields = set(payload.model_dump(exclude_unset=True)) - {"reason"}
+    data = payload.model_dump(exclude_unset=True)
+    data.pop("reason", None)
+    changed_fields = permissions.compute_changed_activity_fields(db, activity, data)
     permissions.require(
         permissions.can_update_activity_fields(db, current_user, activity, changed_fields)
     )

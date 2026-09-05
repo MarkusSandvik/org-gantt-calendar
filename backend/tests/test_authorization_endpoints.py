@@ -123,6 +123,36 @@ def test_member_can_update_own_assigned_task_progress_and_status(
     assert response.status_code == 200, response.text
 
 
+def test_member_can_update_progress_when_frontend_resubmits_the_whole_form(
+    client: TestClient, rbac_world: dict, as_user
+) -> None:
+    # Regression test: the ActivityFormModal always PATCHes the entire
+    # form, not just the fields the user touched. Every other field's
+    # value is unchanged here — only progress_percent differs — so this
+    # must succeed for an assigned Member exactly as it does when only
+    # progress_percent is sent (the test above).
+    activity = make_activity(client, rbac_world, owner_user_id=rbac_world["embedded_member"].id)
+    as_user(client, "embedded.member@rbac.test", PASSWORD)
+    response = client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={
+            "title": activity["title"],
+            "description": activity["description"],
+            "start_date": activity["start_date"],
+            "end_date": activity["end_date"],
+            "status": activity["status"],
+            "progress_percent": 55,
+            "priority": activity["priority"],
+            "owner_team_id": activity["owner_team"]["id"] if activity["owner_team"] else None,
+            "owner_user_id": activity["owner_user"]["id"] if activity["owner_user"] else None,
+            "contributor_user_ids": [c["id"] for c in activity["contributors"]],
+            "tag_ids": [t["id"] for t in activity["tags"]],
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["progress_percent"] == 55
+
+
 def test_member_can_comment_on_assigned_task(
     client: TestClient, rbac_world: dict, as_user
 ) -> None:

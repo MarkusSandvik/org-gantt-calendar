@@ -20,8 +20,9 @@ from sqlalchemy.orm import Session
 
 from app.models.activity import Activity, ActivityContributor
 from app.models.calendar_event import CalendarEvent
-from app.models.enums import GlobalRole, TeamRole
+from app.models.enums import GlobalRole, TaggableType, TeamRole
 from app.models.milestone import Milestone
+from app.models.tag import TagAssociation
 from app.models.team import TeamMembership
 from app.models.user import User
 
@@ -101,6 +102,60 @@ def can_edit_activity(db: Session, user: User, activity: Activity) -> bool:
     if is_admin(user):
         return True
     return leads_team(db, user, activity.owner_team_id)
+
+
+_DIRECT_ACTIVITY_FIELDS = (
+    "title",
+    "start_date",
+    "end_date",
+    "status",
+    "progress_percent",
+    "priority",
+    "owner_team_id",
+    "owner_user_id",
+)
+
+
+def compute_changed_activity_fields(db: Session, activity: Activity, data: dict) -> set[str]:
+    """Diffs a PATCH payload against the activity's actual current state,
+    field by field — never against "was this key present in the request".
+    The frontend always submits the whole form (not just what the user
+    touched), so presence-based diffing would treat every save as
+    changing every field, silently defeating the Member-editable-fields
+    check below (an assigned Member's progress-only update would appear
+    to also 'change' title, dates, priority, ... and get rejected)."""
+    changed: set[str] = set()
+    for field in _DIRECT_ACTIVITY_FIELDS:
+        if field in data and getattr(activity, field) != data[field]:
+            changed.add(field)
+    if "description" in data:
+        # None and "" are the same "no description" to every caller of
+        # this app — treating them as different would flag a change on
+        # every untouched activity that happens to have no description.
+        if (activity.description or "") != (data["description"] or ""):
+            changed.add("description")
+    if "contributor_user_ids" in data:
+        current = set(
+            db.scalars(
+                select(ActivityContributor.user_id).where(
+                    ActivityContributor.activity_id == activity.id
+                )
+            ).all()
+        )
+        if set(data["contributor_user_ids"]) != current:
+            changed.add("contributor_user_ids")
+    if "tag_ids" in data:
+        current = set(
+            db.scalars(
+                select(TagAssociation.tag_id).where(
+                    TagAssociation.entity_type == TaggableType.ACTIVITY,
+                    TagAssociation.entity_id == activity.id,
+                )
+            ).all()
+        )
+        if set(data["tag_ids"]) != current:
+            changed.add("tag_ids")
+    return changed
 
 
 def can_update_activity_fields(
