@@ -65,7 +65,13 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="app-nav">
-        <div className="app-nav__brand">{branding.productName}</div>
+        <div className="app-nav__brand">
+          {branding.logoHref ? (
+            <img className="app-nav__logo" src={branding.logoHref} alt={branding.productName} />
+          ) : (
+            branding.productName
+          )}
+        </div>
         <nav>
           <ul>
             {NAV_ITEMS.map((item) => (

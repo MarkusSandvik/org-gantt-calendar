@@ -7,6 +7,7 @@ import { branding } from "./branding";
 import "./index.css";
 
 document.title = branding.productName;
+document.documentElement.dataset.org = branding.id;
 document
   .querySelector<HTMLLinkElement>('link[rel="icon"]')
   ?.setAttribute("href", branding.faviconHref);

@@ -36,7 +36,15 @@ export function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>{branding.productName}</h1>
+        <div className="auth-card__brand">
+          {branding.logoHref ? (
+            <img className="auth-card__logo" src={branding.logoHref} alt={branding.productName} />
+          ) : (
+            <h1>{branding.productName}</h1>
+          )}
+          {branding.tagline && <p className="auth-card__tagline">{branding.tagline}</p>}
+        </div>
+        <p className="auth-card__description">Internal planning and operations</p>
 
         {!showReset && (
           <form onSubmit={handleSubmit}>
@@ -114,6 +122,17 @@ export function Login() {
               Back to login
             </button>
           </form>
+        )}
+
+        {branding.websiteUrl && (
+          <a
+            className="auth-card__website-link"
+            href={branding.websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {branding.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+          </a>
         )}
       </div>
     </div>

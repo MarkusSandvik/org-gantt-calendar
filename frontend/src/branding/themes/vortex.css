@@ -1,0 +1,97 @@
+/* Vortex NTNU brand theme. Every selector here is scoped to
+ * [data-org="vortex"] (set on <html> by main.tsx from the active branding
+ * profile) so this file has zero effect on any other organization's
+ * deployment, no matter what order it loads in relative to index.css.
+ *
+ * Values are sourced directly from vortexntnu.no's shipped CSS/HTML
+ * (fetched and inspected, not guessed) — see ORGANIZATION_PLAN.md /
+ * VORTEX_DESIGN.md for the full palette analysis. Status colors
+ * (danger/warning/success/badges) are deliberately left on the generic
+ * defaults: Vortex's brand red would otherwise collide with the app's
+ * existing "blocked" danger red, so brand red is reserved for
+ * interactive/brand chrome (buttons, links, active-tab, accent borders)
+ * and never reused for status semantics.
+ *
+ * Specificity is deliberately layered to win regardless of import order:
+ *   :root[data-org="vortex"]                                 (0,2,0) — light (default)
+ *   :root[data-org="vortex"]:not([data-theme="light"])       (0,3,0) — dark via OS preference
+ *   :root[data-org="vortex"][data-theme="dark"]              (0,3,0) — dark, explicit
+ * each of which outranks the matching generic rule in index.css.
+ */
+
+:root[data-org="vortex"] {
+  /* Light theme (default) */
+  --color-bg: #f7f6f5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #efece9;
+  --color-border: #d6d0c8;
+  --color-border-subtle: #b8b1a8;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5c5652;
+  --color-text-faint: #857e78;
+  --color-icon-muted: #756e68;
+  --color-accent: #a3140d;
+  --color-nav-bg: #0a0a0a;
+  --color-nav-text: #b8b8b8;
+  --color-nav-text-active: #ffffff;
+  --color-track-empty: #e3ded8;
+
+  /* Brand tokens — theme-invariant, exact site values */
+  --brand-primary: #c21c1c;
+  --brand-accent-hover: #dc2626;
+  --brand-logo-surface: #0a0a0a;
+  --brand-marine-deep: #0a0a0a;
+  --brand-marine-mid: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-org="vortex"]:not([data-theme="light"]) {
+    --color-bg: #0a0a0a;
+    --color-surface: #161616;
+    --color-surface-subtle: #1a1a1a;
+    --color-border: #262626;
+    --color-border-subtle: #374151;
+    --color-text: #ffffff;
+    --color-text-muted: #9ca3af;
+    --color-text-faint: #6b7280;
+    --color-icon-muted: #6b7280;
+    --color-accent: #c21c1c;
+    --color-nav-bg: #0a0a0a;
+    --color-nav-text: #9ca3af;
+    --color-nav-text-active: #ffffff;
+    --color-track-empty: #2a2a2a;
+  }
+
+  /* #c21c1c measures ~3.3:1 against #0a0a0a — fine for button fills (white
+   * text on top) and borders (3:1 non-text threshold), but below the 4.5:1
+   * AA text-contrast minimum for the handful of places --color-accent is
+   * used as small link/text color rather than a background. */
+  :root[data-org="vortex"]:not([data-theme="light"]) .auth-card__link,
+  :root[data-org="vortex"]:not([data-theme="light"]) .month-grid__week-link,
+  :root[data-org="vortex"]:not([data-theme="light"]) .gantt-header__cell--week-clickable:hover {
+    color: #ef4444;
+  }
+}
+
+:root[data-org="vortex"][data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-surface: #161616;
+  --color-surface-subtle: #1a1a1a;
+  --color-border: #262626;
+  --color-border-subtle: #374151;
+  --color-text: #ffffff;
+  --color-text-muted: #9ca3af;
+  --color-text-faint: #6b7280;
+  --color-icon-muted: #6b7280;
+  --color-accent: #c21c1c;
+  --color-nav-bg: #0a0a0a;
+  --color-nav-text: #9ca3af;
+  --color-nav-text-active: #ffffff;
+  --color-track-empty: #2a2a2a;
+}
+
+:root[data-org="vortex"][data-theme="dark"] .auth-card__link,
+:root[data-org="vortex"][data-theme="dark"] .month-grid__week-link,
+:root[data-org="vortex"][data-theme="dark"] .gantt-header__cell--week-clickable:hover {
+  color: #ef4444;
+}

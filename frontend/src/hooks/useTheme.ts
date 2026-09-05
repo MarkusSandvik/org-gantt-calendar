@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { branding } from "../branding";
+import type { ThemePreference } from "../branding/types";
 
-export type ThemePreference = "light" | "dark" | "system";
+export type { ThemePreference };
 
 const STORAGE_KEY = "theme-preference";
 
@@ -15,7 +17,8 @@ function applyTheme(preference: ThemePreference) {
 
 function readStoredPreference(): ThemePreference {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === "light" || stored === "dark" ? stored : "system";
+  if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  return branding.defaultTheme ?? "system";
 }
 
 export function useTheme() {
