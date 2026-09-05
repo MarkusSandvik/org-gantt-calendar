@@ -14,7 +14,7 @@ TEMPLATE_CSV = (
     ",".join(import_service.EXPECTED_COLUMNS)
     + "\n"
     + "Example task,Short description,2026-09-01,2026-09-15,not_started,normal,0,"
-    "Electrical,Jane Doe,\"Jane Doe, John Smith\",\"Design, PCB\"\n"
+    "Engineering,Jane Doe,\"Jane Doe, John Smith\",\"Design, Review\"\n"
 )
 
 

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
     environment: str = "local"
 
+    # Selects the active app/organizations/<id>/config.py profile.
+    # See ORGANIZATION_PLAN.md — defaults to "default" so local dev needs no setup.
+    organization: str = "default"
+
     # Auth / sessions
     session_cookie_name: str = "session"
     csrf_cookie_name: str = "csrf"

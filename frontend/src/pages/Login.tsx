@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import { branding } from "../branding";
 import { useLogin } from "../hooks/useAuth";
 
 export function Login() {
@@ -35,7 +36,7 @@ export function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Org Planner</h1>
+        <h1>{branding.productName}</h1>
 
         {!showReset && (
           <form onSubmit={handleSubmit}>

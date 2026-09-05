@@ -1,15 +1,18 @@
 # Org Gantt & Calendar
 
 Local-first project planning and organization management system: Gantt chart,
-calendar/week view, dashboard, and admin tools for a student organization's
-technical and organizational activities.
+calendar/week view, dashboard, and admin tools for an organization's
+technical and organizational activities. The core is generic and reusable —
+a single deployment serves one organization, selected at startup by an
+environment variable — see **Architecture** below.
 
 See the full architecture proposal, database model, scheduling engine design,
 and phased implementation plan discussed with the project owner before
 implementation began (development phases are tracked in `CHANGELOG.md`).
 Role-based access control (Admin/Lead/Member) was added after v0.1 shipped —
 see `RBAC_PLAN.md` for that architecture and `AUTHORIZATION.md` for the live
-permission matrix.
+permission matrix. The organization abstraction (this file's **Architecture**
+section) was added afterward — see `ORGANIZATION_PLAN.md` for that design.
 
 ## Stack
 
@@ -22,8 +25,10 @@ permission matrix.
 ```
 backend/
   app/
-    core/       settings
-    db/         engine/session, declarative base, seed script
+    core/       settings, organization profile loader (organization.py)
+    organizations/  one subpackage per org: config.py (branding) + seed_data.py
+    extensions/     optional org-specific backend features (empty by default)
+    db/         engine/session, declarative base, generic seed engine
     models/     SQLAlchemy ORM models (one file per entity)
     schemas/    Pydantic request/response schemas
     routers/    FastAPI route handlers
@@ -34,9 +39,64 @@ backend/
 frontend/
   src/
     api/        typed fetch client + response types
+    branding/   one profile per org: product name, favicon, feature flags
+    extensions/ optional org-specific frontend features (empty by default)
     components/layout/   app shell, nav, shared placeholders
     pages/      one file per top-level view (Dashboard, Gantt, Calendar, ...)
 ```
+
+## Architecture
+
+The app is split into three layers, so one codebase can serve any
+organization without forking:
+
+- **Core** (everything not listed below) — generic, reusable functionality:
+  scheduling, Gantt/calendar rendering, RBAC, the data model. Core never
+  branches on an organization or team's *name*, only on IDs and roles (see
+  `AUTHORIZATION.md`) — this is what lets the same code serve every
+  deployment.
+- **Organization configuration** — `backend/app/organizations/<id>/` and
+  `frontend/src/branding/profiles/<id>.ts`. Each profile supplies branding
+  (product name, favicon), a static `features` flag dict, and (backend only)
+  the demo/seed data for that org. Which profile is active is chosen once,
+  at process start (backend) or build time (frontend), by the
+  `APP_ORGANIZATION` / `VITE_ORGANIZATION` environment variables — both
+  default to `"default"`, the neutral example organization shipped in this
+  repo, so a fresh clone runs with zero configuration.
+- **Organization-specific extensions** — `backend/app/extensions/` and
+  `frontend/src/extensions/`, empty until a real one is needed (see the
+  `README.md` in each). An extension is gated by a feature flag in the
+  active profile; core never imports a specific extension by name.
+
+This is deliberately **not** multi-tenant SaaS: one running deployment
+serves one organization (one database, one active profile). Switching
+organizations means redeploying with different environment variables and a
+different database — not switching organizations at runtime within the same
+process. See `ORGANIZATION_PLAN.md` for the full assessment and the
+reasoning behind these choices, including why there is no `Organization`
+database table.
+
+### Creating a new organization deployment
+
+1. **Backend profile** — create `backend/app/organizations/<id>/` with:
+   - `config.py` exporting `ORGANIZATION = OrganizationConfig(id="<id>", name=..., short_name=..., product_name=..., features={...})`.
+   - `seed_data.py` exporting `TEAM_DEFS`, `TAG_NAMES`, `USER_DEFS`, and a
+     `seed(db: Session) -> None` function that builds that org's demo
+     project/teams/tags/users/activities. Use
+     `app/organizations/default/seed_data.py` as the minimal template, or
+     `app/organizations/vortex/seed_data.py` for a fuller example.
+2. **Frontend profile** — create `frontend/src/branding/profiles/<id>.ts`
+   exporting a `branding: BrandingConfig` (product name, favicon path,
+   `features`), and register it in the `PROFILES` map in
+   `frontend/src/branding/index.ts`.
+3. **Deploy** with `APP_ORGANIZATION=<id>` and `VITE_ORGANIZATION=<id>` set,
+   pointing at a fresh database. Run migrations, then
+   `python -m app.db.seed` once to seed that organization's demo data (skips
+   automatically if the database already has data).
+4. If the organization needs functionality no other deployment should get,
+   add it under `backend/app/extensions/<id>/` or
+   `frontend/src/extensions/<id>/`, gated by a flag in that org's `features`
+   dict — never by checking the organization id directly in core code.
 
 ## Local development
 
@@ -73,6 +133,8 @@ npm run dev
 App available at `http://localhost:5173`. The Vite dev server proxies
 `/api/*` requests to `http://127.0.0.1:8000`, so no CORS configuration or
 `.env` file is needed for local development — just have the backend running.
+`VITE_ORGANIZATION` (see `frontend/.env.example`) defaults to `"default"`
+and selects which branding profile is used.
 
 ### Database migrations
 
@@ -98,7 +160,18 @@ invitation only (Admin/Lead-issued, accepted at `/accept-invitation`);
 there is no public sign-up.
 
 Seeded accounts (password: `DevPassword123!`, or your
-`APP_DEV_SEED_PASSWORD` override):
+`APP_DEV_SEED_PASSWORD` override) depend on the active organization profile
+— see `backend/app/organizations/<id>/seed_data.py`. With the default,
+neutral profile (`APP_ORGANIZATION=default`, the out-of-the-box setting):
+
+| Email | Role |
+|---|---|
+| `admin@example.org` | Admin |
+| `alice@example.org` | Lead — Engineering |
+| `bob@example.org` | Lead — Design |
+| `carol@example.org` | Member — Operations |
+
+With the `vortex` profile (`APP_ORGANIZATION=vortex`):
 
 | Email | Role |
 |---|---|
@@ -108,6 +181,6 @@ Seeded accounts (password: `DevPassword123!`, or your
 | `embedded.member@example.local` | Member — Embedded |
 | `mechanical.member@example.local` | Member — Mechanical |
 
-The original five demo users (`markus@example.org` and friends) still
-exist too, now with real team memberships and the same shared password —
-see `backend/app/db/seed.py`.
+The original five demo users (`markus@example.org` and friends) also still
+exist in the `vortex` profile, with real team memberships and the same
+shared password.

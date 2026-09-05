@@ -1,5 +1,75 @@
 # Changelog
 
+## Organization abstraction (2026-09-05)
+
+A third initiative, built after RBAC shipped: turning the single-org app
+into a reusable platform any organization can deploy from the same
+codebase, without forking or duplicating scheduling/authorization logic.
+See `ORGANIZATION_PLAN.md` for the full assessment (existing-architecture
+findings, the decisions below with their trade-offs, and the 11-phase
+plan this summarizes).
+
+**Key decisions:** no new `Organization` database table — `Project` already
+scopes teams/tags/activities, and every table that would need
+`organization_id` has none today, so it would be schema weight with no
+behavioral payoff in a single-org-per-deployment model. Organization
+identity is a deployment-time environment variable
+(`APP_ORGANIZATION`/`VITE_ORGANIZATION`, both defaulting to `"default"`),
+not runtime state. One repository, one `master` branch — org profiles live
+side by side in the same codebase; there is no per-org fork or package.
+
+**Config abstraction (Phase 1):** `backend/app/core/organization.py`
+(`OrganizationConfig` + `get_active_organization()`, raising a clear error
+on an unrecognized `APP_ORGANIZATION`) and the matching
+`frontend/src/branding/` loader reading `VITE_ORGANIZATION`. Both default
+to `"default"` so a fresh clone runs with zero configuration.
+
+**Seed data extraction (Phase 2):** the real Vortex NTNU demo data (teams,
+tags, users, activities, dependencies, milestones, calendar events) moved
+from `backend/app/db/seed.py` into `app/organizations/vortex/seed_data.py`
+unchanged; a new neutral `app/organizations/default/seed_data.py` was
+written alongside it. `db/seed.py` is now a thin generic engine that
+imports whichever profile is active and calls its `seed(db)`.
+
+**Frontend branding (Phase 3) & remaining literals (Phase 4):** the two
+hardcoded "Org Planner" strings (`AppShell.tsx`, `Login.tsx`) now read
+`branding.productName`; `main.tsx` sets `document.title` and the favicon
+href from the active profile at boot. The CSV import template's example
+row no longer references a Vortex team name.
+
+**Default/neutral profile (Phase 6):** a complete "Example Organization"
+profile (Sample Project, Engineering/Design/Operations teams, four demo
+users) ships in the repo so it boots and demonstrates Gantt/calendar/
+scheduling standalone, with zero Vortex assets referenced — verified by
+test and by a full `npm run build`.
+
+**Extension boundary (Phase 7):** empty `backend/app/extensions/` and
+`frontend/src/extensions/` directories, each with a README documenting the
+convention: an extension is gated by a flag in the active profile's
+`features` dict, and core never imports a specific extension by name.
+
+**Theme retrofit (Phase 8):** `frontend/src/index.css`'s existing
+`--color-*` token names got `@media (prefers-color-scheme: dark)` and
+`[data-theme]` override blocks, plus ~17 new tokens (badge/status colors,
+subtle borders/text, selection backgrounds) extracted from previously
+hardcoded hex values so dark mode could reach them — saturated fills
+(event chips, Gantt bars, priority dots) were deliberately left as literals
+since they read fine on either background. A light/dark/system toggle in
+the nav persists to `localStorage`. Verified live in the browser in all
+three modes.
+
+**Tests (Phase 9):** `backend/tests/test_organization.py` — profile
+resolution (known org, default fallback, unknown-org error), both
+profiles' `seed_data.seed()` running successfully against a fresh
+database, the default profile referencing zero Vortex-specific data, and
+a static-source assertion that `app/core/permissions.py` never hardcodes a
+team or tag name from either profile.
+
+No functional or behavioral change to Admin/Lead/Member permissions,
+Gantt, scheduling, calendar, dashboard, baselines, or audit history — the
+full backend test suite (201 pre-existing + new) stayed green throughout,
+and the `vortex` profile reproduces the exact pre-refactor demo data.
+
 ## Role-based access control & authentication (2026-09-05)
 
 A second, independently-approved initiative built after v0.1 shipped:

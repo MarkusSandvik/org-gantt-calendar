@@ -1,6 +1,31 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { branding } from "../../branding";
 import { useCurrentUser, useLogout } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
+import type { ThemePreference } from "../../hooks/useTheme";
 import { GlobalSearch } from "./GlobalSearch";
+
+const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
+const THEME_LABEL: Record<ThemePreference, string> = {
+  system: "Theme: System",
+  light: "Theme: Light",
+  dark: "Theme: Dark",
+};
+
+function ThemeToggle() {
+  const { preference, setPreference } = useTheme();
+
+  function cycle() {
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(preference) + 1) % THEME_CYCLE.length];
+    setPreference(next);
+  }
+
+  return (
+    <button className="button" onClick={cycle} title="Cycle theme">
+      {THEME_LABEL[preference]}
+    </button>
+  );
+}
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -40,7 +65,7 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="app-nav">
-        <div className="app-nav__brand">Org Planner</div>
+        <div className="app-nav__brand">{branding.productName}</div>
         <nav>
           <ul>
             {NAV_ITEMS.map((item) => (
@@ -62,6 +87,7 @@ export function AppShell() {
       <main className="app-content">
         <div className="app-content__topbar">
           <GlobalSearch />
+          <ThemeToggle />
           <CurrentUserBadge />
         </div>
         <Outlet />
