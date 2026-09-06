@@ -40,6 +40,7 @@ TEAM_DEFS = [
     ("Engineering", TeamCategory.SOFTWARE),
     ("Design", TeamCategory.HARDWARE),
     ("Operations", TeamCategory.ORGANIZATION),
+    ("Board", TeamCategory.ORGANIZATION),
 ]
 
 TAG_NAMES = [

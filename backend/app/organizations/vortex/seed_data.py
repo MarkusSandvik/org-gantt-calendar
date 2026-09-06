@@ -43,6 +43,7 @@ TEAM_DEFS = [
     ("Autonomy", TeamCategory.SOFTWARE),
     ("Control", TeamCategory.SOFTWARE),
     ("GUI", TeamCategory.SOFTWARE),
+    ("Board", TeamCategory.ORGANIZATION),
     ("Marketing", TeamCategory.ORGANIZATION),
     ("Web", TeamCategory.ORGANIZATION),
     ("Finance", TeamCategory.ORGANIZATION),

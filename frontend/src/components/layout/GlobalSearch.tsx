@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { SearchResult, SearchResultType } from "../../api/types";
@@ -25,11 +25,29 @@ function groupByType(results: SearchResult[]): [SearchResultType, SearchResult[]
   return TYPE_ORDER.filter((t) => groups.has(t)).map((t) => [t, groups.get(t)!]);
 }
 
+function isTypingTarget(element: Element | null): boolean {
+  if (!element) return false;
+  const tag = element.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || element.hasAttribute("contenteditable");
+}
+
 export function GlobalSearch() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 250);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(document.activeElement)) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const { data: results } = useQuery({
     queryKey: ["search", debouncedQuery],
@@ -65,6 +83,7 @@ export function GlobalSearch() {
   return (
     <div className="global-search">
       <input
+        ref={inputRef}
         className="global-search__input"
         placeholder="Search activities, milestones, teams, tags, people..."
         value={query}
@@ -72,9 +91,13 @@ export function GlobalSearch() {
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => {
-          if (e.key === "Escape") setOpen(false);
+          if (e.key === "Escape") {
+            setOpen(false);
+            inputRef.current?.blur();
+          }
         }}
       />
+      {!open && !query && <kbd className="global-search__shortcut-hint">/</kbd>}
       {showDropdown && (
         <div className="global-search__dropdown">
           {grouped.length === 0 && (

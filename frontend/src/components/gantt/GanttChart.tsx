@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { toPng } from "html-to-image";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { Activity, Dependency, Milestone, Project, Tag, Team, User } from "../../api/types";
@@ -63,6 +64,16 @@ function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
   return groups;
 }
 
+type ViewMode = "team" | "timeline";
+
+function buildTimelineGroup(activities: Activity[]): ActivityGroup {
+  return {
+    key: "timeline",
+    label: "All Activities",
+    activities: [...activities].sort((a, b) => a.start_date.localeCompare(b.start_date)),
+  };
+}
+
 interface RescheduleTarget {
   entityType: "activity" | "milestone";
   entityId: number;
@@ -74,7 +85,11 @@ interface RescheduleTarget {
 export function GanttChart() {
   const navigate = useNavigate();
   const [zoom, setZoom] = useState<ZoomLevel>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("team");
+  const [hiddenGroupKeys, setHiddenGroupKeys] = useState<Set<string>>(new Set());
   const [reschedule, setReschedule] = useState<RescheduleTarget | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
   const { canEditActivity, canManageMilestone } = usePermissions();
 
@@ -150,15 +165,35 @@ export function GanttChart() {
     [activities, teams],
   );
 
+  const visibleGroups = useMemo(
+    () => groups.filter((g) => !hiddenGroupKeys.has(g.key)),
+    [groups, hiddenGroupKeys],
+  );
+
+  function toggleGroupVisibility(key: string) {
+    setHiddenGroupKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const displayGroups = useMemo(() => {
+    if (viewMode !== "timeline") return visibleGroups;
+    return [buildTimelineGroup(visibleGroups.flatMap((g) => g.activities))];
+  }, [viewMode, visibleGroups]);
+
   const rowIndex = useMemo(() => {
     if (!range) return null;
-    return buildRowIndex(milestones ?? [], groups, range.start, zoom);
-  }, [milestones, groups, range, zoom]);
+    return buildRowIndex(milestones ?? [], displayGroups, range.start, zoom);
+  }, [milestones, displayGroups, range, zoom]);
 
   if (!project || !range) {
     return <p>Loading Gantt data...</p>;
   }
 
+  const projectName = project.name;
   const totalWidth = timelineWidth(range.start, range.end, zoom);
 
   const today = new Date();
@@ -171,6 +206,24 @@ export function GanttChart() {
     (activities?.length ?? 0) === 0 &&
     (milestones?.length ?? 0) === 0;
 
+  async function exportPng() {
+    if (!gridRef.current) return;
+    setExporting(true);
+    try {
+      const background = getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-surface")
+        .trim();
+      const dataUrl = await toPng(gridRef.current, { backgroundColor: background || "#ffffff" });
+      const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const link = document.createElement("a");
+      link.download = `${slug || "gantt"}-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="gantt">
       <FilterBar
@@ -182,6 +235,33 @@ export function GanttChart() {
         users={users ?? []}
         tags={tags ?? []}
       />
+
+      {groups.length > 1 && (
+        <div className="gantt-group-filter">
+          <span className="gantt-group-filter__label">Show groups:</span>
+          {groups.map((g) => (
+            <button
+              key={g.key}
+              type="button"
+              className={
+                hiddenGroupKeys.has(g.key) ? "chip-toggle" : "chip-toggle chip-toggle--active"
+              }
+              onClick={() => toggleGroupVisibility(g.key)}
+            >
+              {g.label}
+            </button>
+          ))}
+          {hiddenGroupKeys.size > 0 && (
+            <button
+              type="button"
+              className="chip-toggle"
+              onClick={() => setHiddenGroupKeys(new Set())}
+            >
+              Show all
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="gantt-toolbar">
         <div className="gantt-legend">
@@ -202,6 +282,20 @@ export function GanttChart() {
           </span>
         </div>
         <div className="zoom-control">
+          <button
+            className={viewMode === "team" ? "zoom-control__btn zoom-control__btn--active" : "zoom-control__btn"}
+            onClick={() => setViewMode("team")}
+          >
+            By Team
+          </button>
+          <button
+            className={viewMode === "timeline" ? "zoom-control__btn zoom-control__btn--active" : "zoom-control__btn"}
+            onClick={() => setViewMode("timeline")}
+          >
+            Timeline
+          </button>
+        </div>
+        <div className="zoom-control">
           {ZOOM_LEVELS.map((level) => (
             <button
               key={level}
@@ -212,13 +306,19 @@ export function GanttChart() {
             </button>
           ))}
         </div>
+        <button className="button" onClick={exportPng} disabled={exporting}>
+          {exporting ? "Exporting..." : "Export as PNG"}
+        </button>
+        <button className="button" onClick={() => window.print()}>
+          Print / Save as PDF
+        </button>
       </div>
 
       {noResults ? (
         <p>No activities or milestones match these filters.</p>
       ) : (
         <div className="gantt-viewport">
-          <div className="gantt-grid" style={{ width: LABEL_WIDTH + totalWidth }}>
+          <div ref={gridRef} className="gantt-grid" style={{ width: LABEL_WIDTH + totalWidth }}>
             <TimelineHeader
               rangeStart={range.start}
               rangeEnd={range.end}
@@ -273,7 +373,7 @@ export function GanttChart() {
                 </div>
               )}
 
-              {groups.map((group) => (
+              {displayGroups.map((group) => (
                 <div key={group.key} className="gantt-group">
                   <div
                     className="gantt-group__header"
@@ -285,6 +385,9 @@ export function GanttChart() {
                     <div key={activity.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
                       <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
                         {activity.title}
+                        {viewMode === "timeline" && activity.owner_team && (
+                          <span className="gantt-row__label-team"> · {activity.owner_team.name}</span>
+                        )}
                       </div>
                       <div className="gantt-row__track" style={{ width: totalWidth }}>
                         <GanttBar

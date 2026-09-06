@@ -7,6 +7,7 @@ import type {
   BaselineCreatePayload,
   Project,
 } from "../../api/types";
+import { useToast } from "../../components/Toast";
 import { usePermissions } from "../../hooks/usePermissions";
 import { BaselineFormModal } from "./BaselineFormModal";
 
@@ -33,6 +34,7 @@ function formatDelta(deltaDays: number): string {
 
 export function BaselinesAdmin() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { canManageBaselines } = usePermissions();
 
   const { data: projects } = useQuery({
@@ -66,6 +68,7 @@ export function BaselinesAdmin() {
       setShowForm(false);
       setFormError(null);
       setSelectedBaselineId(created.id);
+      showToast("Baseline created");
     },
     onError: (err: ApiError) => setFormError(err.message),
   });

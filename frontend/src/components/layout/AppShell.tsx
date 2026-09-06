@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { branding } from "../../branding";
 import { useCurrentUser, useLogout } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
@@ -21,7 +22,7 @@ function ThemeToggle() {
   }
 
   return (
-    <button className="button" onClick={cycle} title="Cycle theme">
+    <button className="app-nav__theme-toggle" onClick={cycle} title="Cycle theme">
       {THEME_LABEL[preference]}
     </button>
   );
@@ -62,9 +63,17 @@ function CurrentUserBadge() {
 }
 
 export function AppShell() {
+  const [navOpen, setNavOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="app-shell">
-      <aside className="app-nav">
+      {navOpen && <div className="app-nav-backdrop" onClick={() => setNavOpen(false)} />}
+      <aside className={navOpen ? "app-nav app-nav--open" : "app-nav"}>
         <div className="app-nav__brand">
           {branding.logoHref ? (
             <img className="app-nav__logo" src={branding.logoHref} alt={branding.productName} />
@@ -89,11 +98,25 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
+        <div className="app-nav__footer">
+          <ThemeToggle />
+          <p className="app-nav__credit">
+            Created by Markus Sandvik
+            <br />© {new Date().getFullYear()}
+          </p>
+        </div>
       </aside>
       <main className="app-content">
         <div className="app-content__topbar">
+          <button
+            type="button"
+            className="app-nav__menu-toggle"
+            onClick={() => setNavOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            ☰
+          </button>
           <GlobalSearch />
-          <ThemeToggle />
           <CurrentUserBadge />
         </div>
         <Outlet />

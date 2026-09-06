@@ -12,6 +12,7 @@ import type {
   User,
 } from "../../api/types";
 import { MilestoneStatusBadge } from "../../components/MilestoneStatusBadge";
+import { useToast } from "../../components/Toast";
 import { usePermissions } from "../../hooks/usePermissions";
 import { MilestoneFormModal } from "./MilestoneFormModal";
 
@@ -25,6 +26,7 @@ const STATUS_FILTER_OPTIONS: MilestoneStatus[] = [
 
 export function MilestonesPage() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
   const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
 
@@ -82,6 +84,7 @@ export function MilestonesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
       closeModal();
+      showToast("Milestone created");
     },
     onError: (err: ApiError) => setFormError(err.message),
   });
@@ -92,6 +95,7 @@ export function MilestonesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
       closeModal();
+      showToast("Milestone updated");
     },
     onError: (err: ApiError) => setFormError(err.message),
   });
@@ -101,8 +105,9 @@ export function MilestonesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
       closeModal();
+      showToast("Milestone deleted");
     },
-    onError: (err: ApiError) => setFormError(err.message),
+    onError: (err: ApiError) => showToast(err.message, "error"),
   });
 
   if (!projectId) {

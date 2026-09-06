@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { CalendarEvent, DashboardSummary, Project } from "../api/types";
 import { StatusBadge } from "../components/StatusBadge";
@@ -8,14 +8,26 @@ import { addDays, formatISODate, parseISODate } from "../utils/date";
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
 const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
 
-const METRIC_LABELS: { key: keyof DashboardSummary["week_counts"]; label: string }[] = [
-  { key: "active_tasks", label: "active tasks" },
-  { key: "milestones_this_week", label: "milestones" },
-  { key: "delayed", label: "delayed" },
-  { key: "blocked", label: "blocked" },
-  { key: "social_activities", label: "social activities" },
-  { key: "meetings", label: "meetings" },
-  { key: "upcoming_deadlines", label: "upcoming deadline" },
+const METRIC_LABELS: {
+  key: keyof DashboardSummary["week_counts"];
+  label: string;
+  href: (s: DashboardSummary) => string;
+}[] = [
+  { key: "active_tasks", label: "active tasks", href: () => "/admin/activities?status=in_progress" },
+  { key: "milestones_this_week", label: "milestones", href: () => "/milestones" },
+  { key: "delayed", label: "delayed", href: () => "/admin/activities?status=delayed" },
+  { key: "blocked", label: "blocked", href: () => "/admin/activities?status=blocked" },
+  {
+    key: "social_activities",
+    label: "social activities",
+    href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}`,
+  },
+  { key: "meetings", label: "meetings", href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}` },
+  {
+    key: "upcoming_deadlines",
+    label: "upcoming deadline",
+    href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}`,
+  },
 ];
 
 export function Dashboard() {
@@ -64,10 +76,10 @@ export function Dashboard() {
       {activeMetrics.length > 0 ? (
         <div className="dashboard-metrics">
           {activeMetrics.map((m) => (
-            <div key={m.key} className="dashboard-metric">
+            <Link key={m.key} to={m.href(summary)} className="dashboard-metric">
               <span className="dashboard-metric__count">{summary.week_counts[m.key]}</span>
               <span className="dashboard-metric__label">{m.label}</span>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

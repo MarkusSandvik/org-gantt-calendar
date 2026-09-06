@@ -13,12 +13,14 @@ import type {
 import { FilterBar } from "../../components/filters/FilterBar";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
+import { useToast } from "../../components/Toast";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { usePermissions } from "../../hooks/usePermissions";
 import { ActivityFormModal } from "./ActivityFormModal";
 
 export function ActivitiesAdmin() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
   const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
@@ -66,6 +68,7 @@ export function ActivitiesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["activities"] });
       closeModal();
+      showToast("Activity created");
     },
     onError: (err: ApiError) => setFormError(err.message),
   });
@@ -76,6 +79,7 @@ export function ActivitiesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["activities"] });
       closeModal();
+      showToast("Activity updated");
     },
     onError: (err: ApiError) => setFormError(err.message),
   });
@@ -85,8 +89,9 @@ export function ActivitiesAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["activities"] });
       closeModal();
+      showToast("Activity deleted");
     },
-    onError: (err: ApiError) => setFormError(err.message),
+    onError: (err: ApiError) => showToast(err.message, "error"),
   });
 
   if (!projectId) {
