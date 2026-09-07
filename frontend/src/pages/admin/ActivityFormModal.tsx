@@ -93,6 +93,7 @@ export function ActivityFormModal({
   const assignedOnly = activity ? !fullEdit && canUpdateAssignedFieldsOnly(activity) : false;
   const readOnly = activity != null && !fullEdit && !assignedOnly;
   const canEditLimitedFields = fullEdit || assignedOnly;
+  const reasonValid = !activity || reason.trim().length > 0;
   const ownerTeamOptions = activity
     ? teams
     : isAdmin
@@ -124,7 +125,7 @@ export function ActivityFormModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(reason.trim() ? { ...form, reason: reason.trim() } : form);
+            onSubmit(activity ? { ...form, reason: reason.trim() } : form);
           }}
         >
           {readOnly && (
@@ -310,11 +311,12 @@ export function ActivityFormModal({
 
           {activity && canEditLimitedFields && (
             <label>
-              Reason for this change (optional)
+              Reason for this change
               <input
                 placeholder="e.g. Supplier delivery slipped a week"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
+                required
               />
             </label>
           )}
@@ -332,7 +334,11 @@ export function ActivityFormModal({
               Cancel
             </button>
             {canEditLimitedFields && (
-              <button type="submit" className="button button--primary" disabled={submitting}>
+              <button
+                type="submit"
+                className="button button--primary"
+                disabled={submitting || !reasonValid}
+              >
                 {activity ? "Save changes" : "Create activity"}
               </button>
             )}

@@ -46,7 +46,10 @@ def test_multiple_baselines_coexist_without_overwriting(
     activity = make_activity(client, seed_basics)
     early_baseline = create_baseline(client, seed_basics["project_id"], name="Early")
 
-    client.patch(f"/api/v1/activities/{activity['id']}", json={"end_date": "2026-09-14"})
+    client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={"end_date": "2026-09-14", "reason": "test reason"},
+    )
     late_baseline = create_baseline(client, seed_basics["project_id"], name="Later")
 
     early_comparison = client.get(
@@ -72,7 +75,10 @@ def test_comparison_reflects_drift_after_a_later_change(
     activity = make_activity(client, seed_basics)
     baseline = create_baseline(client, seed_basics["project_id"])
 
-    client.patch(f"/api/v1/activities/{activity['id']}", json={"end_date": "2026-09-11"})
+    client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={"end_date": "2026-09-11", "reason": "test reason"},
+    )
 
     comparison = client.get(f"/api/v1/baselines/{baseline['id']}/comparison").json()
     item = next(i for i in comparison["items"] if i["entity_id"] == activity["id"])
@@ -125,8 +131,14 @@ def test_comparison_sorted_by_largest_drift_first(
     big_drift = make_activity(client, seed_basics, title="Big drift")
     baseline = create_baseline(client, seed_basics["project_id"])
 
-    client.patch(f"/api/v1/activities/{small_drift['id']}", json={"end_date": "2026-09-05"})
-    client.patch(f"/api/v1/activities/{big_drift['id']}", json={"end_date": "2026-10-04"})
+    client.patch(
+        f"/api/v1/activities/{small_drift['id']}",
+        json={"end_date": "2026-09-05", "reason": "test reason"},
+    )
+    client.patch(
+        f"/api/v1/activities/{big_drift['id']}",
+        json={"end_date": "2026-10-04", "reason": "test reason"},
+    )
 
     comparison = client.get(f"/api/v1/baselines/{baseline['id']}/comparison").json()
     titles_in_order = [i["label"] for i in comparison["items"]]

@@ -118,7 +118,7 @@ def test_member_can_update_own_assigned_task_progress_and_status(
     as_user(client, "embedded.member@rbac.test", PASSWORD)
     response = client.patch(
         f"/api/v1/activities/{activity['id']}",
-        json={"progress_percent": 40, "status": "in_progress"},
+        json={"progress_percent": 40, "status": "in_progress", "reason": "test reason"},
     )
     assert response.status_code == 200, response.text
 
@@ -147,6 +147,7 @@ def test_member_can_update_progress_when_frontend_resubmits_the_whole_form(
             "owner_user_id": activity["owner_user"]["id"] if activity["owner_user"] else None,
             "contributor_user_ids": [c["id"] for c in activity["contributors"]],
             "tag_ids": [t["id"] for t in activity["tags"]],
+            "reason": "test reason",
         },
     )
     assert response.status_code == 200, response.text
@@ -251,7 +252,8 @@ def test_lead_can_edit_own_group_task(client: TestClient, rbac_world: dict, as_u
     activity = make_activity(client, rbac_world)
     as_user(client, "embedded.lead@rbac.test", PASSWORD)
     response = client.patch(
-        f"/api/v1/activities/{activity['id']}", json={"start_date": "2026-09-02"}
+        f"/api/v1/activities/{activity['id']}",
+        json={"start_date": "2026-09-02", "reason": "test reason"},
     )
     assert response.status_code == 200, response.text
 
@@ -391,7 +393,7 @@ def test_admin_can_manage_all_tasks(client: TestClient, rbac_world: dict, as_use
     activity = make_activity(client, rbac_world)
     response = client.patch(
         f"/api/v1/activities/{activity['id']}",
-        json={"owner_team_id": rbac_world["mechanical"].id},
+        json={"owner_team_id": rbac_world["mechanical"].id, "reason": "test reason"},
     )
     assert response.status_code == 200, response.text
 
@@ -518,7 +520,10 @@ def test_admin_can_edit_activity_with_no_owner_team(
     orphan = make_activity(
         client, rbac_world, title="Orphan task 2", owner_team_id=None, owner_user_id=None
     )
-    response = client.patch(f"/api/v1/activities/{orphan['id']}", json={"priority": "high"})
+    response = client.patch(
+        f"/api/v1/activities/{orphan['id']}",
+        json={"priority": "high", "reason": "test reason"},
+    )
     assert response.status_code == 200, response.text
 
 

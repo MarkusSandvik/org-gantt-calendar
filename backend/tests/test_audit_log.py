@@ -64,7 +64,10 @@ def test_status_change_does_not_appear_in_audit_log(
 ) -> None:
     activity = make_activity(client, seed_basics, status="not_started")
 
-    client.patch(f"/api/v1/activities/{activity['id']}", json={"status": "delayed"})
+    client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={"status": "delayed", "reason": "test reason"},
+    )
 
     logs = client.get(
         "/api/v1/audit-log", params={"entity_type": "activity", "entity_id": activity["id"]}
@@ -104,8 +107,14 @@ def test_update_milestone_writes_audit_entries(
 def test_audit_log_filters_by_entity(client: TestClient, seed_basics: dict[str, int]) -> None:
     a = make_activity(client, seed_basics, title="A")
     b = make_activity(client, seed_basics, title="B")
-    client.patch(f"/api/v1/activities/{a['id']}", json={"priority": "critical"})
-    client.patch(f"/api/v1/activities/{b['id']}", json={"priority": "low"})
+    client.patch(
+        f"/api/v1/activities/{a['id']}",
+        json={"priority": "critical", "reason": "test reason"},
+    )
+    client.patch(
+        f"/api/v1/activities/{b['id']}",
+        json={"priority": "low", "reason": "test reason"},
+    )
 
     logs_a = client.get(
         "/api/v1/audit-log", params={"entity_type": "activity", "entity_id": a["id"]}

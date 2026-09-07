@@ -110,6 +110,7 @@ def test_apply_with_no_dependents_updates_only_that_node(
             "entity_id": a["id"],
             "new_start_date": "2026-01-05",
             "new_end_date": "2026-01-15",
+            "reason": "test reason",
         },
     )
     assert response.status_code == 200
@@ -134,6 +135,7 @@ def test_undo_reverts_dates_and_is_itself_audited(
             "entity_id": a["id"],
             "new_start_date": "2026-01-01",
             "new_end_date": "2026-01-15",
+            "reason": "test reason",
         },
     ).json()
     group_id = apply_response["change_group_id"]
@@ -227,6 +229,7 @@ def test_scheduling_milestone_change(
             "entity_id": milestone.id,
             "new_start_date": "2026-02-08",
             "new_end_date": "2026-02-08",
+            "reason": "test reason",
         },
     )
     assert response.status_code == 200, response.text

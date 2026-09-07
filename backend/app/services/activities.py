@@ -255,6 +255,12 @@ def update_activity(
         for field in AUDITED_ACTIVITY_FIELDS
         if field in data and getattr(activity, field) != data[field]
     ]
+    status_changed = new_status is not None and new_status != old_status
+
+    if (field_changes or status_changed) and not (reason and reason.strip()):
+        raise HTTPException(
+            status_code=422, detail="A reason is required to describe this change"
+        )
 
     for field, value in data.items():
         setattr(activity, field, value)
@@ -270,7 +276,7 @@ def update_activity(
         audit_log_service.write_field_changes(
             db, "activity", activity.id, user_id, field_changes, reason
         )
-    if new_status is not None and new_status != old_status:
+    if status_changed:
         comment_service.create_status_change_comment(
             db,
             CommentableType.ACTIVITY,

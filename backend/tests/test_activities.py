@@ -158,7 +158,7 @@ def test_update_activity_partial(client: TestClient, seed_basics: dict[str, int]
 
     response = client.patch(
         f"/api/v1/activities/{created['id']}",
-        json={"progress_percent": 80, "status": "completed"},
+        json={"progress_percent": 80, "status": "completed", "reason": "test reason"},
     )
     assert response.status_code == 200
     body = response.json()
