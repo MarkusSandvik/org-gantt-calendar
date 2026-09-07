@@ -210,6 +210,10 @@ def apply_schedule_change(
     db: Session, payload: SchedulingChangeRequest, user: User
 ) -> SchedulingApplyResponse:
     _validate_request(payload)
+    if not payload.reason or not payload.reason.strip():
+        raise HTTPException(
+            status_code=422, detail="A reason is required to apply a scheduling change"
+        )
     _get_root_or_404(db, payload.entity_type, payload.entity_id)
 
     nodes, adjacency, labels = _load_graph(db)

@@ -31,6 +31,7 @@ export function RescheduleModal({
 
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
+  const [reason, setReason] = useState("");
   const [appliedGroupId, setAppliedGroupId] = useState<string | null>(null);
   const [undone, setUndone] = useState(false);
 
@@ -39,6 +40,7 @@ export function RescheduleModal({
 
   const hasChanged = debouncedStart !== initialStartDate || debouncedEnd !== initialEndDate;
   const datesValid = debouncedEnd >= debouncedStart;
+  const reasonValid = reason.trim().length > 0;
 
   const previewQuery = useQuery({
     queryKey: ["scheduling-preview", entityType, entityId, debouncedStart, debouncedEnd],
@@ -59,6 +61,7 @@ export function RescheduleModal({
         entity_id: entityId,
         new_start_date: debouncedStart,
         new_end_date: debouncedEnd,
+        reason: reason.trim(),
       } satisfies SchedulingChangeRequest),
     onSuccess: (data) => {
       setAppliedGroupId(data.change_group_id);
@@ -104,7 +107,7 @@ export function RescheduleModal({
         {undone && <p className="reschedule-applied">Change undone.</p>}
 
         {!appliedGroupId && (
-          <>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div className="form-row">
               <label>
                 {isMilestone ? "Date" : "Start date"}
@@ -182,6 +185,18 @@ export function RescheduleModal({
               </div>
             )}
 
+            {hasChanged && datesValid && (
+              <label>
+                Reason for this change
+                <input
+                  placeholder="e.g. Supplier delivery slipped a week"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  required
+                />
+              </label>
+            )}
+
             {applyMutation.isError && (
               <p className="form-error">{(applyMutation.error as ApiError).message}</p>
             )}
@@ -194,13 +209,13 @@ export function RescheduleModal({
               <button
                 type="button"
                 className="button button--primary"
-                disabled={!hasChanged || !datesValid || applyMutation.isPending}
+                disabled={!hasChanged || !datesValid || !reasonValid || applyMutation.isPending}
                 onClick={() => applyMutation.mutate()}
               >
                 Apply changes
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {appliedGroupId && (
