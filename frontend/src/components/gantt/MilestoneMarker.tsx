@@ -14,7 +14,7 @@ export function MilestoneMarker({ milestone, rangeStart, zoom, onClick }: Milest
     milestone.title,
     milestone.status.replace("_", " "),
     milestone.date,
-    milestone.team ? `Team: ${milestone.team.name}` : null,
+    milestone.all_teams ? "Team: All teams" : milestone.team ? `Team: ${milestone.team.name}` : null,
     onClick ? "Click to reschedule" : null,
   ]
     .filter(Boolean)

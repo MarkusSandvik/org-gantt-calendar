@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from tests.conftest import SEED_USER_PASSWORD
+
 
 def make_payload(seed_basics: dict[str, int], **overrides) -> dict:
     payload = {
@@ -33,6 +35,43 @@ def test_create_milestone_rejects_unknown_team(
         "/api/v1/milestones", json=make_payload(seed_basics, team_id=9999)
     )
     assert response.status_code == 404
+
+
+def test_create_all_teams_milestone(client: TestClient, seed_basics: dict[str, int]) -> None:
+    response = client.post(
+        "/api/v1/milestones",
+        json=make_payload(seed_basics, team_id=None, all_teams=True),
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["all_teams"] is True
+    assert body["team"] is None
+
+
+def test_create_milestone_rejects_all_teams_with_team(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.post(
+        "/api/v1/milestones",
+        json=make_payload(seed_basics, team_id=seed_basics["team_id"], all_teams=True),
+    )
+    assert response.status_code == 422
+
+
+def test_non_admin_cannot_create_all_teams_milestone(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post("/api/v1/auth/logout")
+    client.post(
+        "/api/v1/auth/login", json={"email": "bob@example.org", "password": SEED_USER_PASSWORD}
+    )
+    client.headers["X-CSRF-Token"] = client.cookies.get("csrf", "")
+
+    response = client.post(
+        "/api/v1/milestones",
+        json=make_payload(seed_basics, team_id=None, all_teams=True),
+    )
+    assert response.status_code == 403
 
 
 def test_list_milestones_filter_by_status_and_tag(

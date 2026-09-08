@@ -41,6 +41,7 @@ function toPayload(projectId: number, milestone: Milestone | null): MilestoneWri
       date: "",
       status: "not_started",
       team_id: null,
+      all_teams: false,
       owner_user_id: null,
       tag_ids: [],
     };
@@ -52,6 +53,7 @@ function toPayload(projectId: number, milestone: Milestone | null): MilestoneWri
     date: milestone.date,
     status: milestone.status,
     team_id: milestone.team?.id ?? null,
+    all_teams: milestone.all_teams,
     owner_user_id: milestone.owner_user?.id ?? null,
     tag_ids: milestone.tags.map((t) => t.id),
   };
@@ -75,7 +77,7 @@ export function MilestoneFormModal({
   );
   const [reason, setReason] = useState("");
 
-  const { canManageMilestone, canCommentOnMilestone } = usePermissions();
+  const { isAdmin, canManageMilestone, canCommentOnMilestone } = usePermissions();
   // Creating is already gated by the "New Milestone" button's own
   // visibility; an existing milestone re-checks against its team.
   const canEdit = milestone ? canManageMilestone(milestone) : true;
@@ -167,15 +169,20 @@ export function MilestoneFormModal({
               Team
               <select
                 disabled={!canEdit}
-                value={form.team_id ?? ""}
+                value={form.all_teams ? "__all__" : (form.team_id ?? "")}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    team_id: e.target.value ? Number(e.target.value) : null,
+                    all_teams: e.target.value === "__all__",
+                    team_id:
+                      e.target.value && e.target.value !== "__all__"
+                        ? Number(e.target.value)
+                        : null,
                   }))
                 }
               >
                 <option value="">None</option>
+                {isAdmin && <option value="__all__">All teams</option>}
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

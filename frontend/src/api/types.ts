@@ -189,6 +189,7 @@ export interface Milestone {
   date: string;
   status: MilestoneStatus;
   team: ActivityRef | null;
+  all_teams: boolean;
   owner_user: ActivityRef | null;
   tags: ActivityTagRef[];
 }
@@ -200,6 +201,7 @@ export interface MilestoneWritePayload {
   date: string;
   status: MilestoneStatus;
   team_id: number | null;
+  all_teams: boolean;
   owner_user_id: number | null;
   tag_ids: number[];
   reason?: string;

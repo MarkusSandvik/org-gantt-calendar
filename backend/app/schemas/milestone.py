@@ -33,6 +33,7 @@ class MilestoneBase(BaseModel):
     date: dt.date
     status: MilestoneStatus = MilestoneStatus.NOT_STARTED
     team_id: int | None = None
+    all_teams: bool = False
     owner_user_id: int | None = None
 
 
@@ -47,6 +48,7 @@ class MilestoneUpdate(BaseModel):
     date: dt.date | None = None
     status: MilestoneStatus | None = None
     team_id: int | None = None
+    all_teams: bool | None = None
     owner_user_id: int | None = None
     tag_ids: list[int] | None = None
     reason: str | None = Field(default=None, max_length=1000)
@@ -60,5 +62,6 @@ class MilestoneRead(BaseModel):
     date: dt.date
     status: MilestoneStatus
     team: MilestoneTeamRead | None
+    all_teams: bool
     owner_user: MilestoneUserRead | None
     tags: list[MilestoneTagRead]

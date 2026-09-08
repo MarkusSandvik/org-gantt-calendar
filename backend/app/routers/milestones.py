@@ -68,6 +68,11 @@ def create_milestone(
     permissions.require(
         permissions.can_manage_milestone_for_team(db, current_user, payload.team_id)
     )
+    if payload.all_teams:
+        permissions.require(
+            permissions.can_apply_to_all_teams(current_user),
+            "Only an Admin can create a milestone that applies to all teams.",
+        )
     return milestone_service.create_milestone(db, payload)
 
 
@@ -80,6 +85,11 @@ def update_milestone(
 ) -> MilestoneRead:
     milestone = _get_milestone_or_404(db, milestone_id)
     permissions.require(permissions.can_manage_milestone(db, current_user, milestone))
+    if payload.all_teams:
+        permissions.require(
+            permissions.can_apply_to_all_teams(current_user),
+            "Only an Admin can set a milestone to apply to all teams.",
+        )
     return milestone_service.update_milestone(
         db, milestone_id, payload, user_id=current_user.id
     )

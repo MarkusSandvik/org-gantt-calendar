@@ -1,6 +1,6 @@
 import datetime as dt
 
-from sqlalchemy import Date, Enum, ForeignKey, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -16,6 +16,7 @@ class Milestone(TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(String(4000))
     date: Mapped[dt.date] = mapped_column(Date)
     team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"))
+    all_teams: Mapped[bool] = mapped_column(Boolean, default=False)
     owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     status: Mapped[MilestoneStatus] = mapped_column(
         Enum(MilestoneStatus), default=MilestoneStatus.NOT_STARTED

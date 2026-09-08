@@ -21,12 +21,20 @@ from app.schemas.milestone import (
 from app.services import audit_log as audit_log_service
 from app.services import comments as comment_service
 
-AUDITED_MILESTONE_FIELDS = ("title", "description", "date", "team_id", "owner_user_id")
+AUDITED_MILESTONE_FIELDS = ("title", "description", "date", "team_id", "all_teams", "owner_user_id")
 
 
 def _get_team_or_404(db: Session, team_id: int) -> None:
     if db.get(Team, team_id) is None:
         raise HTTPException(status_code=404, detail=f"Team {team_id} not found")
+
+
+def _validate_team_scope(all_teams: bool, team_id: int | None) -> None:
+    if all_teams and team_id is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="A milestone can't have both a specific team and apply to all teams.",
+        )
 
 
 def _get_user_or_404(db: Session, user_id: int) -> None:
@@ -75,6 +83,7 @@ def _serialize(db: Session, milestone: Milestone) -> MilestoneRead:
         date=milestone.date,
         status=milestone.status,
         team=MilestoneTeamRead.model_validate(milestone.team) if milestone.team else None,
+        all_teams=milestone.all_teams,
         owner_user=MilestoneUserRead.model_validate(milestone.owner_user)
         if milestone.owner_user
         else None,
@@ -130,6 +139,7 @@ def get_milestone(db: Session, milestone_id: int) -> MilestoneRead:
 
 
 def create_milestone(db: Session, payload: MilestoneCreate) -> MilestoneRead:
+    _validate_team_scope(payload.all_teams, payload.team_id)
     if payload.team_id is not None:
         _get_team_or_404(db, payload.team_id)
     if payload.owner_user_id is not None:
@@ -142,6 +152,7 @@ def create_milestone(db: Session, payload: MilestoneCreate) -> MilestoneRead:
         date=payload.date,
         status=payload.status,
         team_id=payload.team_id,
+        all_teams=payload.all_teams,
         owner_user_id=payload.owner_user_id,
     )
     db.add(milestone)
@@ -163,6 +174,10 @@ def update_milestone(
 
     data = payload.model_dump(exclude_unset=True)
     reason = data.pop("reason", None)
+
+    _validate_team_scope(
+        data.get("all_teams", milestone.all_teams), data.get("team_id", milestone.team_id)
+    )
 
     if data.get("team_id") is not None:
         _get_team_or_404(db, data["team_id"])

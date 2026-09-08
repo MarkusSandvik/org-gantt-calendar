@@ -134,7 +134,7 @@ export function MyTasks() {
                 <span className="dashboard-list__title">{m.title}</span>
                 <MilestoneStatusBadge status={m.status} />
                 <span className="dashboard-list__meta">
-                  {m.team ? `${m.team.name} · ` : ""}
+                  {m.all_teams ? "All teams · " : m.team ? `${m.team.name} · ` : ""}
                   {m.date}
                 </span>
               </li>

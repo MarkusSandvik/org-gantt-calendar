@@ -136,7 +136,10 @@ def get_dashboard_summary(db: Session, project_id: int) -> DashboardSummary:
     ).all()
     upcoming_milestones = [
         UpcomingMilestone(
-            id=m.id, title=m.title, date=m.date, team=m.team.name if m.team else None
+            id=m.id,
+            title=m.title,
+            date=m.date,
+            team=m.team.name if m.team else ("All teams" if m.all_teams else None),
         )
         for m in upcoming_milestone_rows
     ]

@@ -170,7 +170,7 @@ export function MilestonesPage() {
               <tr key={milestone.id} onClick={() => setModalMilestone(milestone)}>
                 <td>{milestone.title}</td>
                 <td>{milestone.date}</td>
-                <td>{milestone.team?.name ?? "—"}</td>
+                <td>{milestone.all_teams ? "All teams" : (milestone.team?.name ?? "—")}</td>
                 <td>{milestone.owner_user?.name ?? "—"}</td>
                 <td>
                   <MilestoneStatusBadge status={milestone.status} />
