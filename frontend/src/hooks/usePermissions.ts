@@ -58,6 +58,7 @@ export function usePermissions() {
 
     canManageBaselines: isAdmin(me),
     canManageTeams: isAdmin(me),
+    canManageTags: isAdmin(me),
     canInviteUsers: isAdmin(me) || isLeadOfAnyTeam(me),
     canViewUserAdmin: isAdmin(me) || isLeadOfAnyTeam(me),
   };

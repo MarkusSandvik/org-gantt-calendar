@@ -9,6 +9,13 @@ export interface Project {
 
 export type TeamCategory = "hardware" | "software" | "organization";
 
+export interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+  team_role: TeamRole;
+}
+
 export interface Team {
   id: number;
   project_id: number;
@@ -16,6 +23,20 @@ export interface Team {
   category: TeamCategory;
   color: string | null;
   sort_order: number;
+  members: TeamMember[];
+}
+
+export interface TeamCreatePayload {
+  project_id: number;
+  name: string;
+  category: TeamCategory;
+  color: string | null;
+}
+
+export interface TeamUpdatePayload {
+  name?: string;
+  category?: TeamCategory;
+  color?: string | null;
 }
 
 export type GlobalRole = "user" | "admin";
@@ -105,6 +126,17 @@ export interface Tag {
   project_id: number;
   name: string;
   color: string | null;
+}
+
+export interface TagCreatePayload {
+  project_id: number;
+  name: string;
+  color: string | null;
+}
+
+export interface TagUpdatePayload {
+  name?: string;
+  color?: string | null;
 }
 
 export type ActivityStatus =

@@ -7,6 +7,8 @@ import { ActivitiesAdmin } from "./pages/admin/ActivitiesAdmin";
 import { BaselinesAdmin } from "./pages/admin/BaselinesAdmin";
 import { DependenciesAdmin } from "./pages/admin/DependenciesAdmin";
 import { ImportExportAdmin } from "./pages/admin/ImportExportAdmin";
+import { TagsAdmin } from "./pages/admin/TagsAdmin";
+import { TeamsAdmin } from "./pages/admin/TeamsAdmin";
 import { UsersAdmin } from "./pages/admin/UsersAdmin";
 import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
@@ -36,6 +38,8 @@ export function App() {
           <Route path="admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="activities" replace />} />
             <Route path="activities" element={<ActivitiesAdmin />} />
+            <Route path="teams" element={<TeamsAdmin />} />
+            <Route path="tags" element={<TagsAdmin />} />
             <Route path="dependencies" element={<DependenciesAdmin />} />
             <Route path="baselines" element={<BaselinesAdmin />} />
             <Route path="import-export" element={<ImportExportAdmin />} />

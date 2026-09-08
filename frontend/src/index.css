@@ -717,6 +717,26 @@ textarea:focus-visible,
   margin: 0 0 12px;
 }
 
+/* Teams / Tags */
+
+.team-members {
+  margin-top: 24px;
+}
+
+.team-members h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.tag-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
 .baseline-drift--later {
   color: var(--color-danger-text);
   font-weight: 600;

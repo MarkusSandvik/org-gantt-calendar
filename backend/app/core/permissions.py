@@ -273,6 +273,10 @@ def can_manage_team(user: User) -> bool:
     return is_admin(user)
 
 
+def can_manage_tag(user: User) -> bool:
+    return is_admin(user)
+
+
 def can_manage_settings(user: User) -> bool:
     return is_admin(user)
 

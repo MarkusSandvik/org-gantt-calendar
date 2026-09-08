@@ -3,8 +3,8 @@ import { usePermissions } from "../../hooks/usePermissions";
 
 const SECTIONS: { label: string; to: string | null; note: string; requiresUserAdmin?: boolean }[] = [
   { label: "Activities", to: "activities", note: "" },
-  { label: "Teams", to: null, note: "Read-only for now — management UI lands with Tags/Users" },
-  { label: "Tags", to: null, note: "Read-only for now — management UI lands with Teams/Users" },
+  { label: "Teams", to: "teams", note: "" },
+  { label: "Tags", to: "tags", note: "" },
   { label: "Users", to: "users", note: "", requiresUserAdmin: true },
   { label: "Dependencies", to: "dependencies", note: "" },
   { label: "Baselines", to: "baselines", note: "" },
