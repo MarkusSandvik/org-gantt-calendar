@@ -47,6 +47,7 @@ function toPayload(projectId: number, activity: Activity | null): ActivityWriteP
       progress_percent: 0,
       priority: "normal",
       owner_team_id: null,
+      all_teams: false,
       owner_user_id: null,
       contributor_user_ids: [],
       tag_ids: [],
@@ -62,6 +63,7 @@ function toPayload(projectId: number, activity: Activity | null): ActivityWriteP
     progress_percent: activity.progress_percent,
     priority: activity.priority,
     owner_team_id: activity.owner_team?.id ?? null,
+    all_teams: activity.all_teams,
     owner_user_id: activity.owner_user?.id ?? null,
     contributor_user_ids: activity.contributors.map((c) => c.id),
     tag_ids: activity.tags.map((t) => t.id),
@@ -185,8 +187,8 @@ export function ActivityFormModal({
           </div>
           {hasDependencies && fullEdit && (
             <p className="form-hint">
-              This activity has dependency links, so dates are rescheduled from the Gantt
-              (click its bar) to preview the impact on dependent items before applying.
+              This activity has dependency links, so dates are rescheduled from the Project
+              Schedule (click its bar) to preview the impact on dependent items before applying.
             </p>
           )}
 
@@ -243,15 +245,20 @@ export function ActivityFormModal({
               Owner team
               <select
                 disabled={!fullEdit}
-                value={form.owner_team_id ?? ""}
+                value={form.all_teams ? "__all__" : (form.owner_team_id ?? "")}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    owner_team_id: e.target.value ? Number(e.target.value) : null,
+                    all_teams: e.target.value === "__all__",
+                    owner_team_id:
+                      e.target.value && e.target.value !== "__all__"
+                        ? Number(e.target.value)
+                        : null,
                   }))
                 }
               >
                 <option value="">None</option>
+                {isAdmin && <option value="__all__">All teams</option>}
                 {ownerTeamOptions.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -322,6 +329,10 @@ export function ActivityFormModal({
           )}
 
           {errorMessage && <p className="form-error">{errorMessage}</p>}
+
+          {activity && canEditLimitedFields && !reasonValid && (
+            <p className="form-error">A reason is required before you can save this change.</p>
+          )}
 
           <div className="modal-actions">
             {activity && onDelete && fullEdit && (

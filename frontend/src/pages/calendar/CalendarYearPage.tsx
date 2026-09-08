@@ -12,19 +12,32 @@ import type {
 } from "../../api/types";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
-import { MonthGrid } from "../../components/calendar/MonthGrid";
 import { buildMonthGrid } from "../../components/calendar/monthLayout";
-import { addDays, formatISODate, getISOWeek } from "../../utils/date";
+import { formatISODate } from "../../utils/date";
 
-const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  new Intl.DateTimeFormat("en-GB", { month: "long" }).format(new Date(2000, i, 1)),
+);
+const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
-export function CalendarMonthPage() {
+function eventsByDay(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
+  const map = new Map<string, CalendarEvent[]>();
+  for (const event of events) {
+    const day = event.start_datetime.slice(0, 10);
+    const list = map.get(day) ?? [];
+    list.push(event);
+    map.set(day, list);
+  }
+  return map;
+}
+
+export function CalendarYearPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const params = useParams<{ year?: string; month?: string }>();
+  const params = useParams<{ year?: string }>();
   const today = new Date();
   const [year, setYear] = useState(params.year ? Number(params.year) : today.getFullYear());
-  const [month, setMonth] = useState(params.month ? Number(params.month) - 1 : today.getMonth());
+  const todayKey = formatISODate(today);
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -46,19 +59,17 @@ export function CalendarMonthPage() {
     enabled: projectId != null,
   });
 
-  const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
-  const rangeStart = grid[0].days[0].date;
-  const rangeEnd = addDays(grid[grid.length - 1].days[6].date, 1);
-  const weekOfFirst = getISOWeek(new Date(year, month, 1));
-
+  const rangeFrom = `${year}-01-01`;
+  const rangeTo = `${year}-12-31`;
   const { data: events } = useQuery({
-    queryKey: ["calendar-events", { projectId, from: formatISODate(rangeStart), to: formatISODate(rangeEnd) }],
+    queryKey: ["calendar-events", { projectId, from: rangeFrom, to: rangeTo }],
     queryFn: () =>
       api.get<CalendarEvent[]>(
-        `/calendar-events?project_id=${projectId}&date_from=${formatISODate(rangeStart)}T00:00:00&date_to=${formatISODate(rangeEnd)}T00:00:00`,
+        `/calendar-events?project_id=${projectId}&date_from=${rangeFrom}T00:00:00&date_to=${rangeTo}T23:59:59`,
       ),
     enabled: projectId != null,
   });
+  const grouped = useMemo(() => eventsByDay(events ?? []), [events]);
 
   const [modalState, setModalState] = useState<
     { event: CalendarEvent | null; defaultDate: Date | null } | undefined
@@ -98,12 +109,6 @@ export function CalendarMonthPage() {
     },
   });
 
-  function goToMonth(delta: number) {
-    const next = new Date(year, month + delta, 1);
-    setYear(next.getFullYear());
-    setMonth(next.getMonth());
-  }
-
   if (!projectId) {
     return <p>Loading calendar...</p>;
   }
@@ -114,28 +119,21 @@ export function CalendarMonthPage() {
 
       <div className="calendar-toolbar">
         <div className="calendar-toolbar__nav">
-          <button type="button" className="button" onClick={() => goToMonth(-1)}>
+          <button type="button" className="button" onClick={() => setYear((y) => y - 1)}>
             ← Prev
           </button>
-          <button
-            type="button"
-            className="button"
-            onClick={() => {
-              setYear(today.getFullYear());
-              setMonth(today.getMonth());
-            }}
-          >
+          <button type="button" className="button" onClick={() => setYear(today.getFullYear())}>
             Today
           </button>
-          <button type="button" className="button" onClick={() => goToMonth(1)}>
+          <button type="button" className="button" onClick={() => setYear((y) => y + 1)}>
             Next →
           </button>
         </div>
-        <h2 className="calendar-toolbar__label">{MONTH_LABEL.format(new Date(year, month, 1))}</h2>
+        <h2 className="calendar-toolbar__label">{year}</h2>
         <CalendarViewSwitcher
-          active="month"
-          monthHref={`/calendar/month/${year}/${month + 1}`}
-          weekHref={`/calendar/week/${weekOfFirst.isoYear}/${weekOfFirst.week}`}
+          active="year"
+          monthHref={`/calendar/month/${year}/${today.getFullYear() === year ? today.getMonth() + 1 : 1}`}
+          weekHref={`/calendar/week/${year}/1`}
           yearHref={`/calendar/year/${year}`}
         />
         <button
@@ -147,14 +145,51 @@ export function CalendarMonthPage() {
         </button>
       </div>
 
-      <MonthGrid
-        year={year}
-        month={month}
-        events={events ?? []}
-        onDayClick={(date) => setModalState({ event: null, defaultDate: date })}
-        onEventClick={(event) => setModalState({ event, defaultDate: null })}
-        onWeekClick={(isoYear, isoWeek) => navigate(`/calendar/week/${isoYear}/${isoWeek}`)}
-      />
+      <div className="year-grid">
+        {MONTH_NAMES.map((name, monthIndex) => {
+          const rows = buildMonthGrid(year, monthIndex);
+          return (
+            <div key={name} className="year-grid__month">
+              <button
+                type="button"
+                className="year-grid__month-header"
+                onClick={() => navigate(`/calendar/month/${year}/${monthIndex + 1}`)}
+              >
+                {name}
+              </button>
+              <div className="year-grid__day-labels">
+                {DAY_LABELS.map((label, i) => (
+                  <span key={i}>{label}</span>
+                ))}
+              </div>
+              {rows.map((row) => (
+                <div key={`${row.isoYear}-${row.isoWeek}`} className="year-grid__row">
+                  {row.days.map((day) => {
+                    const key = formatISODate(day.date);
+                    const dayEvents = grouped.get(key) ?? [];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={
+                          "year-grid__day" +
+                          (day.inCurrentMonth ? "" : " year-grid__day--outside") +
+                          (dayEvents.length > 0 ? " year-grid__day--has-events" : "") +
+                          (key === todayKey ? " year-grid__day--today" : "")
+                        }
+                        title={dayEvents.map((e) => e.title).join(", ") || undefined}
+                        onClick={() => navigate(`/calendar/month/${year}/${monthIndex + 1}`)}
+                      >
+                        {day.date.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
 
       {modalState && teams && users && activities && (
         <CalendarEventModal

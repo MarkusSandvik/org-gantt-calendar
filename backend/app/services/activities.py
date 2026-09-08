@@ -35,6 +35,7 @@ AUDITED_ACTIVITY_FIELDS = (
     "progress_percent",
     "priority",
     "owner_team_id",
+    "all_teams",
     "owner_user_id",
 )
 
@@ -43,6 +44,14 @@ def _validate_dates(start_date: dt.date, end_date: dt.date) -> None:
     if end_date < start_date:
         raise HTTPException(
             status_code=422, detail="end_date must not be before start_date"
+        )
+
+
+def _validate_team_scope(all_teams: bool, owner_team_id: int | None) -> None:
+    if all_teams and owner_team_id is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="An activity can't have both a specific owner team and apply to all teams.",
         )
 
 
@@ -118,6 +127,7 @@ def _serialize(db: Session, activity: Activity) -> ActivityRead:
         owner_team=ActivityTeamRead.model_validate(activity.owner_team)
         if activity.owner_team
         else None,
+        all_teams=activity.all_teams,
         owner_user=ActivityUserRead.model_validate(activity.owner_user)
         if activity.owner_user
         else None,
@@ -194,6 +204,7 @@ def create_activity(
     db: Session, payload: ActivityCreate, created_by_id: int
 ) -> ActivityRead:
     _validate_dates(payload.start_date, payload.end_date)
+    _validate_team_scope(payload.all_teams, payload.owner_team_id)
     if payload.owner_team_id is not None:
         _get_team_or_404(db, payload.owner_team_id)
     if payload.owner_user_id is not None:
@@ -209,6 +220,7 @@ def create_activity(
         progress_percent=payload.progress_percent,
         priority=payload.priority,
         owner_team_id=payload.owner_team_id,
+        all_teams=payload.all_teams,
         owner_user_id=payload.owner_user_id,
         created_by_id=created_by_id,
     )
@@ -236,6 +248,10 @@ def update_activity(
     new_start = data.get("start_date", activity.start_date)
     new_end = data.get("end_date", activity.end_date)
     _validate_dates(new_start, new_end)
+    _validate_team_scope(
+        data.get("all_teams", activity.all_teams),
+        data.get("owner_team_id", activity.owner_team_id),
+    )
 
     if data.get("owner_team_id") is not None:
         _get_team_or_404(db, data["owner_team_id"])

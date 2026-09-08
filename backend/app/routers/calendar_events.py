@@ -68,6 +68,11 @@ def create_calendar_event(
     permissions.require(
         permissions.can_manage_calendar_event_for_team(db, current_user, payload.team_id)
     )
+    if payload.all_teams:
+        permissions.require(
+            permissions.can_apply_to_all_teams(current_user),
+            "Only an Admin can create a calendar event that applies to all teams.",
+        )
     return calendar_event_service.create_calendar_event(db, payload)
 
 
@@ -80,6 +85,11 @@ def update_calendar_event(
 ) -> CalendarEventRead:
     event = _get_event_or_404(db, event_id)
     permissions.require(permissions.can_manage_calendar_event(db, current_user, event))
+    if payload.all_teams:
+        permissions.require(
+            permissions.can_apply_to_all_teams(current_user),
+            "Only an Admin can set a calendar event to apply to all teams.",
+        )
     return calendar_event_service.update_calendar_event(db, event_id, payload)
 
 

@@ -138,7 +138,7 @@ export function ActivitiesAdmin() {
             {activities.map((activity) => (
               <tr key={activity.id} onClick={() => setModalActivity(activity)}>
                 <td>{activity.title}</td>
-                <td>{activity.owner_team?.name ?? "—"}</td>
+                <td>{activity.all_teams ? "All teams" : (activity.owner_team?.name ?? "—")}</td>
                 <td>{activity.owner_user?.name ?? "—"}</td>
                 <td>
                   <StatusBadge status={activity.status} />

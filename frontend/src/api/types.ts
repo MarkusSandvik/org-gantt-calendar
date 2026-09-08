@@ -170,6 +170,7 @@ export interface Activity {
   progress_percent: number;
   priority: Priority;
   owner_team: ActivityRef | null;
+  all_teams: boolean;
   owner_user: ActivityRef | null;
   created_by: ActivityRef | null;
   contributors: ActivityRef[];
@@ -280,6 +281,7 @@ export interface CalendarEvent {
   all_day: boolean;
   location: string | null;
   team: ActivityRef | null;
+  all_teams: boolean;
   owner_user: ActivityRef | null;
   related_activity: CalendarEventRef | null;
   created_at: string;
@@ -296,6 +298,7 @@ export interface CalendarEventWritePayload {
   all_day: boolean;
   location: string | null;
   team_id: number | null;
+  all_teams: boolean;
   owner_user_id: number | null;
   related_activity_id: number | null;
 }
@@ -408,6 +411,7 @@ export interface ActivityWritePayload {
   progress_percent: number;
   priority: Priority;
   owner_team_id: number | null;
+  all_teams: boolean;
   owner_user_id: number | null;
   contributor_user_ids: number[];
   tag_ids: number[];

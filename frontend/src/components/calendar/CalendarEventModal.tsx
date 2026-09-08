@@ -7,6 +7,7 @@ import type {
   Team,
   User,
 } from "../../api/types";
+import { usePermissions } from "../../hooks/usePermissions";
 import { formatISODate } from "../../utils/date";
 
 const EVENT_TYPE_OPTIONS: CalendarEventType[] = [
@@ -57,6 +58,7 @@ function toPayload(
       all_day: false,
       location: null,
       team_id: null,
+      all_teams: false,
       owner_user_id: null,
       related_activity_id: null,
     };
@@ -71,6 +73,7 @@ function toPayload(
     all_day: event.all_day,
     location: event.location,
     team_id: event.team?.id ?? null,
+    all_teams: event.all_teams,
     owner_user_id: event.owner_user?.id ?? null,
     related_activity_id: event.related_activity?.id ?? null,
   };
@@ -92,6 +95,7 @@ export function CalendarEventModal({
   const [form, setForm] = useState<CalendarEventWritePayload>(() =>
     toPayload(projectId, event, defaultDate),
   );
+  const { isAdmin } = usePermissions();
 
   function toggleAllDay(checked: boolean) {
     setForm((f) => {
@@ -207,15 +211,20 @@ export function CalendarEventModal({
             <label>
               Team
               <select
-                value={form.team_id ?? ""}
+                value={form.all_teams ? "__all__" : (form.team_id ?? "")}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    team_id: e.target.value ? Number(e.target.value) : null,
+                    all_teams: e.target.value === "__all__",
+                    team_id:
+                      e.target.value && e.target.value !== "__all__"
+                        ? Number(e.target.value)
+                        : null,
                   }))
                 }
               >
                 <option value="">None</option>
+                {isAdmin && <option value="__all__">All teams</option>}
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

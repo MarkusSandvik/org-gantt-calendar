@@ -201,6 +201,10 @@ export function RescheduleModal({
               <p className="form-error">{(applyMutation.error as ApiError).message}</p>
             )}
 
+            {hasChanged && datesValid && !reasonValid && (
+              <p className="form-error">A reason is required before you can apply this change.</p>
+            )}
+
             <div className="modal-actions">
               <div className="modal-actions__spacer" />
               <button type="button" className="button" onClick={onClose}>

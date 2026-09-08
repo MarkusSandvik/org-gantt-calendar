@@ -27,6 +27,7 @@ const FIELD_LABELS: Record<string, string> = {
   progress_percent: "progress",
   priority: "priority",
   owner_team_id: "owner team",
+  all_teams: "applies to all teams",
   owner_user_id: "owner",
   team_id: "team",
 };
@@ -79,6 +80,9 @@ export function ActivityLogPanel({
     }
     if (fieldName === "owner_user_id") {
       return users?.find((u) => String(u.id) === raw)?.name ?? raw;
+    }
+    if (fieldName === "all_teams") {
+      return raw === "True" ? "Yes" : "No";
     }
     return raw;
   }

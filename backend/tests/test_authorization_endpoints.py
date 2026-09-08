@@ -270,6 +270,21 @@ def test_lead_can_assign_own_group_member(
     assert response.status_code == 200, response.text
 
 
+def test_lead_cannot_promote_own_task_to_all_teams(
+    client: TestClient, rbac_world: dict, as_user
+) -> None:
+    # A Lead has full edit rights over their own team's activity, but
+    # scoping it to every team at once is an org-wide action reserved for
+    # Admin — the same boundary org-wide milestones already enforce.
+    activity = make_activity(client, rbac_world)
+    as_user(client, "embedded.lead@rbac.test", PASSWORD)
+    response = client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={"owner_team_id": None, "all_teams": True, "reason": "test reason"},
+    )
+    assert response.status_code == 403
+
+
 def test_lead_cannot_edit_another_groups_task(
     client: TestClient, rbac_world: dict, as_user
 ) -> None:

@@ -35,6 +35,7 @@ class CalendarEventBase(BaseModel):
     all_day: bool = False
     location: str | None = None
     team_id: int | None = None
+    all_teams: bool = False
     owner_user_id: int | None = None
     related_activity_id: int | None = None
 
@@ -52,6 +53,7 @@ class CalendarEventUpdate(BaseModel):
     all_day: bool | None = None
     location: str | None = None
     team_id: int | None = None
+    all_teams: bool | None = None
     owner_user_id: int | None = None
     related_activity_id: int | None = None
 
@@ -69,6 +71,7 @@ class CalendarEventRead(BaseModel):
     all_day: bool
     location: str | None
     team: CalendarEventTeamRead | None
+    all_teams: bool
     owner_user: CalendarEventUserRead | None
     related_activity: CalendarEventActivityRead | None
     created_at: dt.datetime

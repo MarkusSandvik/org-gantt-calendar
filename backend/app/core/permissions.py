@@ -96,6 +96,13 @@ def can_create_activity(db: Session, user: User, team_id: int | None) -> bool:
     return leads_team(db, user, team_id)
 
 
+def can_apply_to_all_teams(user: User) -> bool:
+    """Scoping an activity or calendar event to every team at once is an
+    org-wide action, so — like an org-wide milestone — it's Admin-only
+    regardless of which team(s) a Lead otherwise manages."""
+    return is_admin(user)
+
+
 def can_edit_activity(db: Session, user: User, activity: Activity) -> bool:
     """Full edit rights (schedule, priority, owner, contributors, team,
     delete) — Admin or the Lead of the activity's own team only."""

@@ -36,6 +36,7 @@ class ActivityBase(BaseModel):
     progress_percent: int = Field(default=0, ge=0, le=100)
     priority: Priority = Priority.NORMAL
     owner_team_id: int | None = None
+    all_teams: bool = False
     owner_user_id: int | None = None
 
 
@@ -54,6 +55,7 @@ class ActivityUpdate(BaseModel):
     progress_percent: int | None = Field(default=None, ge=0, le=100)
     priority: Priority | None = None
     owner_team_id: int | None = None
+    all_teams: bool | None = None
     owner_user_id: int | None = None
     contributor_user_ids: list[int] | None = None
     tag_ids: list[int] | None = None
@@ -71,6 +73,7 @@ class ActivityRead(BaseModel):
     progress_percent: int
     priority: Priority
     owner_team: ActivityTeamRead | None
+    all_teams: bool
     owner_user: ActivityUserRead | None
     created_by: ActivityUserRead | None
     contributors: list[ActivityUserRead]

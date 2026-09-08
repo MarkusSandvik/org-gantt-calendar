@@ -1,6 +1,6 @@
 import datetime as dt
 
-from sqlalchemy import Date, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -22,6 +22,7 @@ class Activity(TimestampMixin, Base):
     progress_percent: Mapped[int] = mapped_column(Integer, default=0)
     priority: Mapped[Priority] = mapped_column(Enum(Priority), default=Priority.NORMAL)
     owner_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"))
+    all_teams: Mapped[bool] = mapped_column(Boolean, default=False)
     owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
 

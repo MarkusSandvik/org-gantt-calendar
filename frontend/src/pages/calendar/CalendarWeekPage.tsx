@@ -13,6 +13,7 @@ import type {
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
+import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
 import { addDays, formatISODate, getISOWeek, isoWeekToMonday } from "../../utils/date";
 
 const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -153,6 +154,12 @@ export function CalendarWeekPage() {
           </button>
         </div>
         <div className="calendar-toolbar__label" />
+        <CalendarViewSwitcher
+          active="week"
+          monthHref={`/calendar/month/${monday.getFullYear()}/${monday.getMonth() + 1}`}
+          weekHref={`/calendar/week/${isoYear}/${isoWeek}`}
+          yearHref={`/calendar/year/${monday.getFullYear()}`}
+        />
         <button
           type="button"
           className="button button--primary"

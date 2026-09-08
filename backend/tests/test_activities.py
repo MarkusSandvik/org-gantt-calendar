@@ -54,6 +54,61 @@ def test_create_activity_rejects_unknown_team(
     assert response.status_code == 404
 
 
+def test_create_all_teams_activity(client: TestClient, seed_basics: dict[str, int]) -> None:
+    response = client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, owner_team_id=None, all_teams=True),
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["all_teams"] is True
+    assert body["owner_team"] is None
+
+
+def test_create_activity_rejects_all_teams_with_owner_team(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, owner_team_id=seed_basics["team_id"], all_teams=True),
+    )
+    assert response.status_code == 422
+
+
+def test_non_admin_cannot_create_all_teams_activity(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post("/api/v1/auth/logout")
+    client.post(
+        "/api/v1/auth/login", json={"email": "bob@example.org", "password": SEED_USER_PASSWORD}
+    )
+    client.headers["X-CSRF-Token"] = client.cookies.get("csrf", "")
+
+    response = client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, owner_team_id=None, all_teams=True),
+    )
+    assert response.status_code == 403
+
+
+def test_update_activity_to_all_teams_requires_admin(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    created = client.post("/api/v1/activities", json=make_payload(seed_basics)).json()
+
+    client.post("/api/v1/auth/logout")
+    client.post(
+        "/api/v1/auth/login", json={"email": "bob@example.org", "password": SEED_USER_PASSWORD}
+    )
+    client.headers["X-CSRF-Token"] = client.cookies.get("csrf", "")
+
+    response = client.patch(
+        f"/api/v1/activities/{created['id']}",
+        json={"owner_team_id": None, "all_teams": True, "reason": "test reason"},
+    )
+    assert response.status_code == 403
+
+
 def test_create_activity_rejects_out_of_range_progress(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:

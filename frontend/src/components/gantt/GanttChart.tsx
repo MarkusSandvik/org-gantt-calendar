@@ -12,7 +12,13 @@ import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
 import { RescheduleModal } from "./RescheduleModal";
 import { TimelineHeader } from "./TimelineHeader";
-import { buildRowIndex, GROUP_HEADER_HEIGHT, ROW_HEIGHT } from "./rowLayout";
+import {
+  assignMilestoneLanes,
+  buildRowIndex,
+  estimateMilestoneOverflowDays,
+  GROUP_HEADER_HEIGHT,
+  ROW_HEIGHT,
+} from "./rowLayout";
 import {
   addDays,
   dateToX,
@@ -32,9 +38,12 @@ interface ActivityGroup {
 
 function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
   const byTeam = new Map<number, Activity[]>();
+  const allTeams: Activity[] = [];
   const unassigned: Activity[] = [];
   for (const activity of activities) {
-    if (activity.owner_team) {
+    if (activity.all_teams) {
+      allTeams.push(activity);
+    } else if (activity.owner_team) {
       const list = byTeam.get(activity.owner_team.id) ?? [];
       list.push(activity);
       byTeam.set(activity.owner_team.id, list);
@@ -53,6 +62,13 @@ function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
         activities: [...list].sort((a, b) => a.start_date.localeCompare(b.start_date)),
       });
     }
+  }
+  if (allTeams.length > 0) {
+    groups.push({
+      key: "all-teams",
+      label: "All Teams",
+      activities: allTeams.sort((a, b) => a.start_date.localeCompare(b.start_date)),
+    });
   }
   if (unassigned.length > 0) {
     groups.push({
@@ -156,9 +172,16 @@ export function GanttChart() {
     }
     if (dates.length === 0) return null;
     const start = new Date(Math.min(...dates.map((d) => d.getTime())));
-    const end = new Date(Math.max(...dates.map((d) => d.getTime())));
+    let end = new Date(Math.max(...dates.map((d) => d.getTime())));
+    // A milestone's label can render well past its own date — make sure the
+    // range extends far enough that the last milestone's text isn't clipped
+    // (most visible in the PNG export, which is sized to this exact range).
+    for (const m of allMilestones ?? []) {
+      const labelEnd = addDays(parseISODate(m.date), estimateMilestoneOverflowDays(m.title, zoom));
+      if (labelEnd > end) end = labelEnd;
+    }
     return { start: addDays(start, -3), end: addDays(end, 3) };
-  }, [project, allActivities, allMilestones]);
+  }, [project, allActivities, allMilestones, zoom]);
 
   const groups = useMemo(
     () => buildGroups(activities ?? [], teams ?? []),
@@ -184,13 +207,25 @@ export function GanttChart() {
     return [buildTimelineGroup(visibleGroups.flatMap((g) => g.activities))];
   }, [viewMode, visibleGroups]);
 
+  const showMilestones = !hiddenGroupKeys.has("milestones");
+  const visibleMilestones = showMilestones ? milestones ?? [] : [];
+  const allToggleKeys = [
+    ...(allMilestones && allMilestones.length > 0 ? ["milestones"] : []),
+    ...groups.map((g) => g.key),
+  ];
+
+  const milestoneLanes = useMemo(() => {
+    if (!range) return [];
+    return assignMilestoneLanes(visibleMilestones, range.start, zoom);
+  }, [visibleMilestones, range, zoom]);
+
   const rowIndex = useMemo(() => {
     if (!range) return null;
-    return buildRowIndex(milestones ?? [], displayGroups, range.start, zoom);
-  }, [milestones, displayGroups, range, zoom]);
+    return buildRowIndex(visibleMilestones, displayGroups, range.start, zoom);
+  }, [visibleMilestones, displayGroups, range, zoom]);
 
   if (!project || !range) {
-    return <p>Loading Gantt data...</p>;
+    return <p>Loading Project Schedule data...</p>;
   }
 
   const projectName = project.name;
@@ -236,9 +271,18 @@ export function GanttChart() {
         tags={tags ?? []}
       />
 
-      {groups.length > 1 && (
+      {(groups.length > 1 || (allMilestones && allMilestones.length > 0)) && (
         <div className="gantt-group-filter">
           <span className="gantt-group-filter__label">Show groups:</span>
+          {allMilestones && allMilestones.length > 0 && (
+            <button
+              type="button"
+              className={showMilestones ? "chip-toggle chip-toggle--active" : "chip-toggle"}
+              onClick={() => toggleGroupVisibility("milestones")}
+            >
+              Milestones
+            </button>
+          )}
           {groups.map((g) => (
             <button
               key={g.key}
@@ -251,6 +295,15 @@ export function GanttChart() {
               {g.label}
             </button>
           ))}
+          {hiddenGroupKeys.size < allToggleKeys.length && (
+            <button
+              type="button"
+              className="chip-toggle"
+              onClick={() => setHiddenGroupKeys(new Set(allToggleKeys))}
+            >
+              Hide all
+            </button>
+          )}
           {hiddenGroupKeys.size > 0 && (
             <button
               type="button"
@@ -336,7 +389,7 @@ export function GanttChart() {
                 />
               )}
 
-              {milestones && milestones.length > 0 && (
+              {visibleMilestones.length > 0 && (
                 <div className="gantt-group">
                   <div
                     className="gantt-group__header"
@@ -344,29 +397,30 @@ export function GanttChart() {
                   >
                     <span className="gantt-group__header-text">Milestones</span>
                   </div>
-                  {milestones.map((m) => (
-                    <div key={m.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
-                      <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
-                        {m.title}
-                      </div>
+                  {milestoneLanes.map((lane, laneIndex) => (
+                    <div key={laneIndex} className="gantt-row" style={{ height: ROW_HEIGHT }}>
+                      <div className="gantt-row__label" style={{ width: LABEL_WIDTH }} />
                       <div className="gantt-row__track" style={{ width: totalWidth }}>
-                        <MilestoneMarker
-                          milestone={m}
-                          rangeStart={range.start}
-                          zoom={zoom}
-                          onClick={
-                            canManageMilestone(m)
-                              ? () =>
-                                  setReschedule({
-                                    entityType: "milestone",
-                                    entityId: m.id,
-                                    label: m.title,
-                                    startDate: m.date,
-                                    endDate: m.date,
-                                  })
-                              : undefined
-                          }
-                        />
+                        {lane.map((m) => (
+                          <MilestoneMarker
+                            key={m.id}
+                            milestone={m}
+                            rangeStart={range.start}
+                            zoom={zoom}
+                            onClick={
+                              canManageMilestone(m)
+                                ? () =>
+                                    setReschedule({
+                                      entityType: "milestone",
+                                      entityId: m.id,
+                                      label: m.title,
+                                      startDate: m.date,
+                                      endDate: m.date,
+                                    })
+                                : undefined
+                            }
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -385,7 +439,10 @@ export function GanttChart() {
                     <div key={activity.id} className="gantt-row" style={{ height: ROW_HEIGHT }}>
                       <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
                         {activity.title}
-                        {viewMode === "timeline" && activity.owner_team && (
+                        {viewMode === "timeline" && activity.all_teams && (
+                          <span className="gantt-row__label-team"> · All Teams</span>
+                        )}
+                        {viewMode === "timeline" && !activity.all_teams && activity.owner_team && (
                           <span className="gantt-row__label-team"> · {activity.owner_team.name}</span>
                         )}
                       </div>

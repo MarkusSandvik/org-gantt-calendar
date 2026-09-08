@@ -156,8 +156,9 @@ export function MilestoneFormModal({
           </div>
           {hasDependencies && canEdit && (
             <p className="form-hint">
-              This milestone has dependency links, so its date is rescheduled from the Gantt
-              (click its diamond) to preview the impact on dependent items before applying.
+              This milestone has dependency links, so its date is rescheduled from the Project
+              Schedule (click its diamond) to preview the impact on dependent items before
+              applying.
             </p>
           )}
 

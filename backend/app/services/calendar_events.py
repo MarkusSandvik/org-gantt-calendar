@@ -23,6 +23,14 @@ def _validate_dates(start: dt.datetime, end: dt.datetime) -> None:
         )
 
 
+def _validate_team_scope(all_teams: bool, team_id: int | None) -> None:
+    if all_teams and team_id is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="A calendar event can't have both a specific team and apply to all teams.",
+        )
+
+
 def _get_team_or_404(db: Session, team_id: int) -> None:
     if db.get(Team, team_id) is None:
         raise HTTPException(status_code=404, detail=f"Team {team_id} not found")
@@ -79,6 +87,7 @@ def create_calendar_event(
     db: Session, payload: CalendarEventCreate
 ) -> CalendarEventRead:
     _validate_dates(payload.start_datetime, payload.end_datetime)
+    _validate_team_scope(payload.all_teams, payload.team_id)
     if payload.team_id is not None:
         _get_team_or_404(db, payload.team_id)
     if payload.owner_user_id is not None:
@@ -104,6 +113,9 @@ def update_calendar_event(
     new_start = data.get("start_datetime", event.start_datetime)
     new_end = data.get("end_datetime", event.end_datetime)
     _validate_dates(new_start, new_end)
+    _validate_team_scope(
+        data.get("all_teams", event.all_teams), data.get("team_id", event.team_id)
+    )
 
     if data.get("team_id") is not None:
         _get_team_or_404(db, data["team_id"])

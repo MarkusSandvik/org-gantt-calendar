@@ -12,6 +12,7 @@ import { TeamsAdmin } from "./pages/admin/TeamsAdmin";
 import { UsersAdmin } from "./pages/admin/UsersAdmin";
 import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
+import { CalendarYearPage } from "./pages/calendar/CalendarYearPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Gantt } from "./pages/Gantt";
 import { Login } from "./pages/Login";
@@ -32,7 +33,10 @@ export function App() {
           <Route index element={<Dashboard />} />
           <Route path="gantt" element={<Gantt />} />
           <Route path="calendar" element={<CalendarMonthPage />} />
+          <Route path="calendar/month/:year/:month" element={<CalendarMonthPage />} />
           <Route path="calendar/week/:isoYear/:isoWeek" element={<CalendarWeekPage />} />
+          <Route path="calendar/year" element={<CalendarYearPage />} />
+          <Route path="calendar/year/:year" element={<CalendarYearPage />} />
           <Route path="milestones" element={<MilestonesPage />} />
           <Route path="my-tasks" element={<MyTasks />} />
           <Route path="admin" element={<AdminLayout />}>

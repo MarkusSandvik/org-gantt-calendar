@@ -30,7 +30,7 @@ function ThemeToggle() {
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
-  { to: "/gantt", label: "Gantt" },
+  { to: "/gantt", label: "Project Schedule" },
   { to: "/calendar", label: "Calendar" },
   { to: "/milestones", label: "Milestones" },
   { to: "/my-tasks", label: "My Tasks" },

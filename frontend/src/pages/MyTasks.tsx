@@ -106,7 +106,7 @@ export function MyTasks() {
                   }
                 >
                   <td>{activity.title}</td>
-                  <td>{activity.owner_team?.name ?? "—"}</td>
+                  <td>{activity.all_teams ? "All teams" : (activity.owner_team?.name ?? "—")}</td>
                   <td>
                     <StatusBadge status={activity.status} />
                   </td>

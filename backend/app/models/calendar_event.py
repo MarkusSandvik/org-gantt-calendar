@@ -20,6 +20,7 @@ class CalendarEvent(TimestampMixin, Base):
     all_day: Mapped[bool] = mapped_column(Boolean, default=False)
     location: Mapped[str | None] = mapped_column(String(300))
     team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"))
+    all_teams: Mapped[bool] = mapped_column(Boolean, default=False)
     owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     related_activity_id: Mapped[int | None] = mapped_column(ForeignKey("activities.id"))
     recurrence_rule: Mapped[str | None] = mapped_column(String(500))
