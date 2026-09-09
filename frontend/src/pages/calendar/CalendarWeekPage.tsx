@@ -39,8 +39,9 @@ export function CalendarWeekPage() {
   const projectSlug = project?.slug;
 
   const { data: teams } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => api.get<Team[]>("/teams"),
+    queryKey: ["teams", { projectId }],
+    queryFn: () => api.get<Team[]>(`/teams?project_id=${projectId}`),
+    enabled: projectId != null,
   });
   const { data: users } = useQuery({
     queryKey: ["users"],
@@ -223,6 +224,7 @@ export function CalendarWeekPage() {
           teams={teams}
           users={users}
           activities={allActivities}
+          canEditProject={canEdit}
           submitting={createMutation.isPending || updateMutation.isPending}
           errorMessage={formError}
           onClose={closeModal}

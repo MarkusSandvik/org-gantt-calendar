@@ -29,16 +29,18 @@ export function ActivitiesAdmin() {
   const projectId = project?.id;
 
   const { data: teams } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => api.get<Team[]>("/teams"),
+    queryKey: ["teams", { projectId }],
+    queryFn: () => api.get<Team[]>(`/teams?project_id=${projectId}`),
+    enabled: projectId != null,
   });
   const { data: users } = useQuery({
     queryKey: ["users"],
     queryFn: () => api.get<User[]>("/users"),
   });
   const { data: tags } = useQuery({
-    queryKey: ["tags"],
-    queryFn: () => api.get<Tag[]>("/tags"),
+    queryKey: ["tags", { projectId }],
+    queryFn: () => api.get<Tag[]>(`/tags?project_id=${projectId}`),
+    enabled: projectId != null,
   });
   const { data: dependencies } = useQuery({
     queryKey: ["dependencies", { projectId }],
@@ -161,6 +163,7 @@ export function ActivitiesAdmin() {
           teams={teams}
           users={users}
           tags={tags}
+          canEditProject={canEdit}
           hasDependencies={
             modalActivity != null &&
             (dependencies ?? []).some(

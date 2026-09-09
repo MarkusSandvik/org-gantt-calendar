@@ -16,8 +16,9 @@ export function TagsAdmin() {
   const projectId = project?.id;
 
   const { data: tags, isLoading } = useQuery({
-    queryKey: ["tags"],
-    queryFn: () => api.get<Tag[]>("/tags"),
+    queryKey: ["tags", { projectId }],
+    queryFn: () => api.get<Tag[]>(`/tags?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const [modalTag, setModalTag] = useState<Tag | null | undefined>(undefined);

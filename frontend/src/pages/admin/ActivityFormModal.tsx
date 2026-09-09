@@ -28,6 +28,7 @@ interface ActivityFormModalProps {
   users: User[];
   tags: Tag[];
   hasDependencies?: boolean;
+  canEditProject: boolean;
   onSubmit: (payload: ActivityWritePayload) => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -77,6 +78,7 @@ export function ActivityFormModal({
   users,
   tags,
   hasDependencies = false,
+  canEditProject,
   onSubmit,
   onClose,
   onDelete,
@@ -90,9 +92,12 @@ export function ActivityFormModal({
     usePermissions();
   // Creating is already gated by the "New Activity" button's own
   // visibility, so full-field editing is assumed here; an existing
-  // activity re-checks per-field rights against who owns it.
-  const fullEdit = activity ? canEditActivity(activity) : true;
-  const assignedOnly = activity ? !fullEdit && canUpdateAssignedFieldsOnly(activity) : false;
+  // activity re-checks per-field rights against who owns it. A read-only
+  // project overrides every permission-based right below it — history
+  // stays viewable, never editable, regardless of who's looking.
+  const fullEdit = canEditProject && (activity ? canEditActivity(activity) : true);
+  const assignedOnly =
+    canEditProject && activity ? !fullEdit && canUpdateAssignedFieldsOnly(activity) : false;
   const readOnly = activity != null && !fullEdit && !assignedOnly;
   const canEditLimitedFields = fullEdit || assignedOnly;
   const reasonValid = !activity || reason.trim().length > 0;
@@ -130,7 +135,13 @@ export function ActivityFormModal({
             onSubmit(activity ? { ...form, reason: reason.trim() } : form);
           }}
         >
-          {readOnly && (
+          {readOnly && !canEditProject && (
+            <p className="form-hint">
+              This project is read-only, so this activity can't be edited — you can still view
+              its full details below.
+            </p>
+          )}
+          {readOnly && canEditProject && (
             <p className="form-hint">
               You can view this activity but can't make changes — you're not its owner,
               contributor, or the Lead of {activity?.owner_team?.name ?? "its team"}.

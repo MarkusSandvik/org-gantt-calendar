@@ -22,8 +22,9 @@ export function TeamsAdmin() {
   const projectId = project?.id;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => api.get<Team[]>("/teams"),
+    queryKey: ["teams", { projectId }],
+    queryFn: () => api.get<Team[]>(`/teams?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const [expandedTeamId, setExpandedTeamId] = useState<number | null>(null);

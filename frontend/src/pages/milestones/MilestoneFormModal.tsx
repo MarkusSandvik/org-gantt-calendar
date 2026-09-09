@@ -25,6 +25,7 @@ interface MilestoneFormModalProps {
   users: User[];
   tags: Tag[];
   hasDependencies?: boolean;
+  canEditProject: boolean;
   onSubmit: (payload: MilestoneWritePayload) => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -66,6 +67,7 @@ export function MilestoneFormModal({
   users,
   tags,
   hasDependencies = false,
+  canEditProject,
   onSubmit,
   onClose,
   onDelete,
@@ -79,8 +81,10 @@ export function MilestoneFormModal({
 
   const { isAdmin, canManageMilestone, canCommentOnMilestone } = usePermissions();
   // Creating is already gated by the "New Milestone" button's own
-  // visibility; an existing milestone re-checks against its team.
-  const canEdit = milestone ? canManageMilestone(milestone) : true;
+  // visibility; an existing milestone re-checks against its team. A
+  // read-only project overrides that check — history stays viewable,
+  // never editable.
+  const canEdit = canEditProject && (milestone ? canManageMilestone(milestone) : true);
 
   function toggleTag(tagId: number) {
     setForm((f) => ({
@@ -101,7 +105,13 @@ export function MilestoneFormModal({
             onSubmit(reason.trim() ? { ...form, reason: reason.trim() } : form);
           }}
         >
-          {!canEdit && (
+          {!canEdit && !canEditProject && (
+            <p className="form-hint">
+              This project is read-only, so this milestone can't be edited — you can still view
+              its full details below.
+            </p>
+          )}
+          {!canEdit && canEditProject && (
             <p className="form-hint">
               You can view this milestone but can't make changes — only its team's Lead or
               an Admin can.

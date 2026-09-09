@@ -30,6 +30,7 @@ interface CalendarEventModalProps {
   teams: Team[];
   users: User[];
   activities: Activity[];
+  canEditProject: boolean;
   onSubmit: (payload: CalendarEventWritePayload) => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -86,6 +87,7 @@ export function CalendarEventModal({
   teams,
   users,
   activities,
+  canEditProject,
   onSubmit,
   onClose,
   onDelete,
@@ -128,10 +130,18 @@ export function CalendarEventModal({
             });
           }}
         >
+          {!canEditProject && (
+            <p className="form-hint">
+              This project is read-only, so this event can't be edited — you can still view its
+              full details below.
+            </p>
+          )}
+
           <label>
             Title
             <input
               required
+              disabled={!canEditProject}
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
@@ -141,6 +151,7 @@ export function CalendarEventModal({
             Description
             <textarea
               rows={2}
+              disabled={!canEditProject}
               value={form.description ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value || null }))}
             />
@@ -150,6 +161,7 @@ export function CalendarEventModal({
             <label>
               Type
               <select
+                disabled={!canEditProject}
                 value={form.event_type}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, event_type: e.target.value as CalendarEventType }))
@@ -165,6 +177,7 @@ export function CalendarEventModal({
             <label className="checkbox-label checkbox-label--inline">
               <input
                 type="checkbox"
+                disabled={!canEditProject}
                 checked={form.all_day}
                 onChange={(e) => toggleAllDay(e.target.checked)}
               />
@@ -178,6 +191,7 @@ export function CalendarEventModal({
               <input
                 type={form.all_day ? "date" : "datetime-local"}
                 required
+                disabled={!canEditProject}
                 value={form.all_day ? form.start_datetime.slice(0, 10) : form.start_datetime}
                 onChange={(e) => {
                   const value = form.all_day ? `${e.target.value}T00:00` : e.target.value;
@@ -190,6 +204,7 @@ export function CalendarEventModal({
               <input
                 type={form.all_day ? "date" : "datetime-local"}
                 required
+                disabled={!canEditProject}
                 value={form.all_day ? form.end_datetime.slice(0, 10) : form.end_datetime}
                 onChange={(e) => {
                   const value = form.all_day ? `${e.target.value}T23:59` : e.target.value;
@@ -202,6 +217,7 @@ export function CalendarEventModal({
           <label>
             Location
             <input
+              disabled={!canEditProject}
               value={form.location ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value || null }))}
             />
@@ -211,6 +227,7 @@ export function CalendarEventModal({
             <label>
               Team
               <select
+                disabled={!canEditProject}
                 value={form.all_teams ? "__all__" : (form.team_id ?? "")}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -235,6 +252,7 @@ export function CalendarEventModal({
             <label>
               Owner
               <select
+                disabled={!canEditProject}
                 value={form.owner_user_id ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -256,6 +274,7 @@ export function CalendarEventModal({
           <label>
             Related activity
             <select
+              disabled={!canEditProject}
               value={form.related_activity_id ?? ""}
               onChange={(e) =>
                 setForm((f) => ({
@@ -276,7 +295,7 @@ export function CalendarEventModal({
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 
           <div className="modal-actions">
-            {event && onDelete && (
+            {event && onDelete && canEditProject && (
               <button type="button" className="button button--danger" onClick={onDelete}>
                 Delete
               </button>
@@ -285,9 +304,11 @@ export function CalendarEventModal({
             <button type="button" className="button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary" disabled={submitting}>
-              {event ? "Save changes" : "Create event"}
-            </button>
+            {canEditProject && (
+              <button type="submit" className="button button--primary" disabled={submitting}>
+                {event ? "Save changes" : "Create event"}
+              </button>
+            )}
           </div>
         </form>
       </div>
