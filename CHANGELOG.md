@@ -1,5 +1,117 @@
 # Changelog
 
+## Multi-project support: isolation, lifecycle, and history (2026-09-09)
+
+A fourth initiative, built after the organization abstraction shipped:
+letting a single deployment run more than one project (a "season" —
+e.g. "AUV 2026", then "Team 28 — 2027/28") over time, each fully
+isolated from the others, with completed seasons staying around as
+read-only history instead of being overwritten or deleted. Required a
+written before-any-code assessment (existing data model, project-scoped
+vs. org-global classification, schema/authorization/migration plan)
+before implementation began.
+
+**Existing-architecture finding that reshaped the plan:** most entities
+(Activity, Milestone, CalendarEvent, Team, Tag, Baseline) already had a
+`project_id` FK from earlier phases — the actual gap was narrower than
+expected. `Dependency` had none at all, and the scheduling engine loaded
+its graph globally with zero project filter: a live cross-project
+data-corruption risk the moment a second project existed, fixed first
+and given its own regression test. `Team.project_id` being `NOT NULL`
+already made `TeamMembership` transitively project-scoped, so no new
+`ProjectMembership` model was needed — a user can already lead one
+project's team and be a Member on another's simultaneously.
+
+**Project lifecycle:** a `ProjectStatus` enum (`draft`/`active`/
+`completed`/`archived`) with a validated transition graph
+(`draft`→{`active`,`archived`}, `active`→{`completed`,`archived`},
+`completed`→{`active`,`archived`}, `archived`→ nowhere — a deliberate
+dead end for v1, per the design doc's fallback). Exactly one project is
+`is_default` (the one everyone lands on) at a time; activating a project
+demotes the previous default, completing it first if it was active. One
+Alembic migration (batch mode, backfilling `slug`/`is_default` for
+existing projects and `Dependency.project_id` via a `COALESCE` across
+predecessor/successor lookups) added these fields plus the required
+`Dependency.project_id` FK.
+
+**Backend-enforced read-only history:** `ensure_project_editable()`
+raises 422 (`"'X' is archived and read-only."`) before every create/
+update/delete on a completed or archived project's activities,
+milestones, calendar events, teams, tags, dependencies, baselines, and
+team memberships, and before the scheduling engine's apply step — this
+is a server-side gate, not a frontend convenience; the UI hiding
+create/edit controls is a separate, independent layer on top of it.
+
+**Authorization fix found while building this:** promoting a user to
+Lead of a new team previously demoted their Lead role on *any* other
+team org-wide, including one on an archived/completed project — silently
+rewriting historical Lead records. Scoped the demotion query to
+draft/active projects only (a `Team`→`Project` join), with a regression
+test proving an archived project's Lead record survives a promotion
+elsewhere.
+
+**Project-aware URLs:** every project-scoped route moved under
+`/:projectSlug/...`, with the old flat routes (`/gantt`,
+`/admin/activities`, etc.) kept working as redirects into the
+slug-prefixed equivalent — old bookmarks and links never 404. A new
+`ProjectContext` derives the active project from the URL's first segment
+(falling back to the last one selected in this browser, then the org's
+default), so a deep link or bookmark always shows the project it names;
+an unrecognized slug 404s rather than silently substituting another
+project's data. Project slugs are generated avoiding the frontend's
+reserved route words (`gantt`, `admin`, etc.) so a project can never
+become unreachable. `GlobalSearch` was later found still querying `/search`
+without `project_id` despite the backend already supporting the filter —
+fixed so search results never leak across projects.
+
+**Frontend read-only UI:** every "New/Add/Set/Import" button, delete
+action, and Gantt/milestone reschedule trigger across Activities,
+Milestones, Teams, Tags, Dependencies, Baselines, Import, and Calendar
+now also checks `useProject().canEdit`, so a completed/archived
+project's controls are hidden rather than present-but-guaranteed-to-fail.
+
+**Admin > Projects:** a new admin-only page listing every project the
+org has ever run, with a "New Project" form (name, season label,
+description, dates, and an optional "copy teams & tags from" picker —
+duplicating team/tag *structure* only; activities, milestones, events,
+dependencies, baselines, and memberships never carry over into a new
+season) and per-project lifecycle buttons (Activate/Complete/Archive/
+Reactivate) gated to valid transitions, each behind a confirmation
+explaining its consequence.
+
+**Tests:** `test_multi_project.py` (new) — project CRUD and status
+transitions, cross-project activity/dependency/search isolation,
+rescheduling never propagating across projects, the Lead-uniqueness
+historical-integrity fix, read-only rejection on completed/archived
+projects across every entity type, copy-structure behavior, and the
+reserved-slug guard. 242 backend tests total (up from 235).
+
+**Verified:** 242/242 backend tests pass, frontend type-checks and
+builds clean. Checked end-to-end in a browser: the existing single-
+project deployment (`AUV 2026`) works unchanged at its new
+`/auv-2026/...` URLs; created a real second project via the UI with
+"copy from AUV 2026" selected and confirmed all 12 teams and 12 tags
+duplicated with zero activities/memberships carried over; switched
+between projects via the selector and confirmed the URL, nav links, and
+data all followed; archived the test project and confirmed its "New
+Activity" button disappeared *and* a direct API write attempt was
+rejected with the expected 422; confirmed an invalid project slug 404s
+and a legacy flat URL (`/admin/dependencies`) redirects correctly; test
+data removed from the dev database afterward via direct SQL (no delete-
+project endpoint exists by design — see below).
+
+**Not yet implemented / deliberately deferred:** an explicit
+Admin-unlock flow to reverse `archived` (the design doc's own fallback
+for v1: archived is a one-way dead end); a dedicated read-only *view*
+mode for existing records in a completed/archived project — the create/
+edit modals still open, but submitting is refused server-side, showing
+the backend's 422 message rather than presenting a purpose-built
+view-only layout; copying team memberships when copying a previous
+project's structure (deliberate — a new season is re-recruited, not
+inherited); and a project delete endpoint (projects are permanent
+historical records once created, matching the org's "history stays
+available" principle established since Phase 10's append-only comments).
+
 ## Organization abstraction (2026-09-05)
 
 A third initiative, built after RBAC shipped: turning the single-org app

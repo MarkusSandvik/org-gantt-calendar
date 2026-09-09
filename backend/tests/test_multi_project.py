@@ -230,6 +230,31 @@ def test_dependency_list_is_project_scoped(
     assert len(deps_b) == 1 and deps_b[0]["predecessor_label"] == "B1"
 
 
+def test_search_scoped_to_project_id_does_not_leak_across_projects(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    other = make_second_project(client)
+    make_activity(client, seed_basics["project_id"], "Uniquename Alpha")
+    make_activity(client, other["id"], "Uniquename Beta")
+
+    results_a = client.get(
+        "/api/v1/search", params={"q": "Uniquename", "project_id": seed_basics["project_id"]}
+    ).json()
+    labels_a = {r["label"] for r in results_a}
+    assert labels_a == {"Uniquename Alpha"}
+
+    results_b = client.get(
+        "/api/v1/search", params={"q": "Uniquename", "project_id": other["id"]}
+    ).json()
+    labels_b = {r["label"] for r in results_b}
+    assert labels_b == {"Uniquename Beta"}
+
+    # Without a project_id, search is intentionally unscoped (used only by
+    # callers that haven't resolved a project yet) and sees both.
+    results_unscoped = client.get("/api/v1/search", params={"q": "Uniquename"}).json()
+    assert {r["label"] for r in results_unscoped} == {"Uniquename Alpha", "Uniquename Beta"}
+
+
 def test_rescheduling_never_propagates_across_projects(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:

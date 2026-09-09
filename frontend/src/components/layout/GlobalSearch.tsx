@@ -52,10 +52,14 @@ export function GlobalSearch() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  const projectId = project?.id;
   const { data: results } = useQuery({
-    queryKey: ["search", debouncedQuery],
-    queryFn: () => api.get<SearchResult[]>(`/search?q=${encodeURIComponent(debouncedQuery)}`),
-    enabled: debouncedQuery.trim().length >= 2,
+    queryKey: ["search", debouncedQuery, projectId],
+    queryFn: () =>
+      api.get<SearchResult[]>(
+        `/search?q=${encodeURIComponent(debouncedQuery)}&project_id=${projectId}`,
+      ),
+    enabled: debouncedQuery.trim().length >= 2 && projectId != null,
   });
 
   function select(result: SearchResult) {
