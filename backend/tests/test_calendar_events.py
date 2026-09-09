@@ -105,7 +105,8 @@ def test_list_calendar_events_filter_by_event_type(
     )
 
     result = client.get(
-        "/api/v1/calendar-events", params={"event_type": "social"}
+        "/api/v1/calendar-events",
+        params={"project_id": seed_basics["project_id"], "event_type": "social"},
     ).json()
     assert len(result) == 1
     assert result[0]["title"] == "Team dinner"
@@ -128,7 +129,11 @@ def test_list_calendar_events_date_range_overlap(
 
     in_week = client.get(
         "/api/v1/calendar-events",
-        params={"date_from": "2026-09-07T00:00:00", "date_to": "2026-09-13T23:59:59"},
+        params={
+            "project_id": seed_basics["project_id"],
+            "date_from": "2026-09-07T00:00:00",
+            "date_to": "2026-09-13T23:59:59",
+        },
     ).json()
     assert len(in_week) == 1
     assert in_week[0]["title"] == "Embedded weekly meeting"
@@ -175,6 +180,7 @@ def test_list_calendar_events_filter_by_owner_user(
     )
 
     mine = client.get(
-        "/api/v1/calendar-events", params={"owner_user_id": seed_basics["user_id"]}
+        "/api/v1/calendar-events",
+        params={"project_id": seed_basics["project_id"], "owner_user_id": seed_basics["user_id"]},
     ).json()
     assert [e["title"] for e in mine] == ["Alice's event"]

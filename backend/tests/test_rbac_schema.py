@@ -29,7 +29,7 @@ def test_user_has_password_hash_global_role_and_status(db_session: Session) -> N
 
 
 def test_team_membership_has_team_role_and_unique_constraint(db_session: Session) -> None:
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     team = Team(project=project, name="Embedded", category="hardware")
     user = User(name="Lead", email="lead@example.org", global_role=GlobalRole.USER)
     db_session.add_all([project, team, user])
@@ -50,7 +50,7 @@ def test_team_membership_has_team_role_and_unique_constraint(db_session: Session
 
 
 def test_invitation_model_round_trip(db_session: Session) -> None:
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     team = Team(project=project, name="Mechanical", category="hardware")
     admin = User(name="Admin", email="admin@example.org", global_role=GlobalRole.ADMIN)
     db_session.add_all([project, team, admin])

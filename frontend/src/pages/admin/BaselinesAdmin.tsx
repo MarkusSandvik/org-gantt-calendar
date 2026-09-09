@@ -5,9 +5,9 @@ import type {
   Baseline,
   BaselineComparison,
   BaselineCreatePayload,
-  Project,
 } from "../../api/types";
 import { useToast } from "../../components/Toast";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { BaselineFormModal } from "./BaselineFormModal";
 
@@ -37,11 +37,8 @@ export function BaselinesAdmin() {
   const { showToast } = useToast();
   const { canManageBaselines } = usePermissions();
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: baselines } = useQuery({
     queryKey: ["baselines", projectId],
@@ -84,7 +81,7 @@ export function BaselinesAdmin() {
           A baseline snapshots every activity's and milestone's currently planned dates, so
           you can later compare the original plan against where things actually stand.
         </p>
-        {canManageBaselines && (
+        {canManageBaselines && canEdit && (
           <button className="button button--primary" onClick={() => setShowForm(true)}>
             Set Baseline
           </button>

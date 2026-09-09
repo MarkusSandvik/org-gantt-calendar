@@ -143,12 +143,16 @@ def test_list_activity_filters(client: TestClient, seed_basics: dict[str, int]) 
     )
 
     delayed_only = client.get(
-        "/api/v1/activities", params={"status": "delayed"}
+        "/api/v1/activities",
+        params={"project_id": seed_basics["project_id"], "status": "delayed"},
     ).json()
     assert len(delayed_only) == 1
     assert delayed_only[0]["title"] == "Delayed thing"
 
-    search = client.get("/api/v1/activities", params={"q": "on track"}).json()
+    search = client.get(
+        "/api/v1/activities",
+        params={"project_id": seed_basics["project_id"], "q": "on track"},
+    ).json()
     assert len(search) == 1
     assert search[0]["title"] == "On track thing"
 
@@ -161,7 +165,8 @@ def test_list_activity_filter_by_tag(client: TestClient, seed_basics: dict[str, 
     )
 
     result = client.get(
-        "/api/v1/activities", params={"tag_id": seed_basics["tag_id"]}
+        "/api/v1/activities",
+        params={"project_id": seed_basics["project_id"], "tag_id": seed_basics["tag_id"]},
     ).json()
     assert [a["id"] for a in result] == [tagged["id"]]
 
@@ -178,7 +183,11 @@ def test_list_activity_filter_by_contributor(
     )
 
     result = client.get(
-        "/api/v1/activities", params={"contributor_user_id": seed_basics["other_user_id"]}
+        "/api/v1/activities",
+        params={
+            "project_id": seed_basics["project_id"],
+            "contributor_user_id": seed_basics["other_user_id"],
+        },
     ).json()
     assert [a["id"] for a in result] == [with_contributor["id"]]
 
@@ -197,13 +206,21 @@ def test_list_activity_filter_by_date_range(
 
     in_range = client.get(
         "/api/v1/activities",
-        params={"date_from": "2026-09-01", "date_to": "2026-09-30"},
+        params={
+            "project_id": seed_basics["project_id"],
+            "date_from": "2026-09-01",
+            "date_to": "2026-09-30",
+        },
     ).json()
     assert [a["id"] for a in in_range] == [default["id"]]
 
     early_range = client.get(
         "/api/v1/activities",
-        params={"date_from": "2026-01-01", "date_to": "2026-01-31"},
+        params={
+            "project_id": seed_basics["project_id"],
+            "date_from": "2026-01-01",
+            "date_to": "2026-01-31",
+        },
     ).json()
     assert [a["id"] for a in early_range] == [early["id"]]
 
@@ -270,6 +287,7 @@ def test_delete_activity_blocked_by_dependency(
 
     db_session.add(
         Dependency(
+            project_id=seed_basics["project_id"],
             predecessor_type=SchedulableType.ACTIVITY,
             predecessor_id=first["id"],
             successor_type=SchedulableType.ACTIVITY,

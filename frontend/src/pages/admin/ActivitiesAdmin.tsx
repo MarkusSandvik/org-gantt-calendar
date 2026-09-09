@@ -5,7 +5,6 @@ import type {
   Activity,
   ActivityWritePayload,
   Dependency,
-  Project,
   Tag,
   Team,
   User,
@@ -14,6 +13,7 @@ import { FilterBar } from "../../components/filters/FilterBar";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useToast } from "../../components/Toast";
+import { useProject } from "../../contexts/ProjectContext";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { usePermissions } from "../../hooks/usePermissions";
 import { ActivityFormModal } from "./ActivityFormModal";
@@ -25,11 +25,8 @@ export function ActivitiesAdmin() {
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
   const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: teams } = useQuery({
     queryKey: ["teams"],
@@ -44,8 +41,9 @@ export function ActivitiesAdmin() {
     queryFn: () => api.get<Tag[]>("/tags"),
   });
   const { data: dependencies } = useQuery({
-    queryKey: ["dependencies"],
-    queryFn: () => api.get<Dependency[]>("/dependencies"),
+    queryKey: ["dependencies", { projectId }],
+    queryFn: () => api.get<Dependency[]>(`/dependencies?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const filterQuery = toQueryString({ project_id: projectId });
@@ -110,7 +108,7 @@ export function ActivitiesAdmin() {
           users={users ?? []}
           tags={tags ?? []}
         />
-        {canCreateAnywhere && (
+        {canCreateAnywhere && canEdit && (
           <button className="button button--primary" onClick={() => setModalActivity(null)}>
             New Activity
           </button>
@@ -183,7 +181,7 @@ export function ActivitiesAdmin() {
             }
           }}
           onDelete={
-            modalActivity
+            modalActivity && canEdit
               ? () => {
                   if (confirm(`Delete "${modalActivity.title}"? This cannot be undone.`)) {
                     deleteMutation.mutate(modalActivity.id);

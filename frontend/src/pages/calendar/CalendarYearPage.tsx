@@ -6,13 +6,13 @@ import type {
   Activity,
   CalendarEvent,
   CalendarEventWritePayload,
-  Project,
   Team,
   User,
 } from "../../api/types";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
 import { buildMonthGrid } from "../../components/calendar/monthLayout";
+import { useProject } from "../../contexts/ProjectContext";
 import { formatISODate } from "../../utils/date";
 
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
@@ -39,11 +39,9 @@ export function CalendarYearPage() {
   const [year, setYear] = useState(params.year ? Number(params.year) : today.getFullYear());
   const todayKey = formatISODate(today);
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
+  const projectSlug = project?.slug;
 
   const { data: teams } = useQuery({
     queryKey: ["teams"],
@@ -132,17 +130,19 @@ export function CalendarYearPage() {
         <h2 className="calendar-toolbar__label">{year}</h2>
         <CalendarViewSwitcher
           active="year"
-          monthHref={`/calendar/month/${year}/${today.getFullYear() === year ? today.getMonth() + 1 : 1}`}
-          weekHref={`/calendar/week/${year}/1`}
-          yearHref={`/calendar/year/${year}`}
+          monthHref={`/${projectSlug}/calendar/month/${year}/${today.getFullYear() === year ? today.getMonth() + 1 : 1}`}
+          weekHref={`/${projectSlug}/calendar/week/${year}/1`}
+          yearHref={`/${projectSlug}/calendar/year/${year}`}
         />
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => setModalState({ event: null, defaultDate: today })}
-        >
-          New Event
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => setModalState({ event: null, defaultDate: today })}
+          >
+            New Event
+          </button>
+        )}
       </div>
 
       <div className="year-grid">
@@ -153,7 +153,7 @@ export function CalendarYearPage() {
               <button
                 type="button"
                 className="year-grid__month-header"
-                onClick={() => navigate(`/calendar/month/${year}/${monthIndex + 1}`)}
+                onClick={() => navigate(`/${projectSlug}/calendar/month/${year}/${monthIndex + 1}`)}
               >
                 {name}
               </button>
@@ -178,7 +178,7 @@ export function CalendarYearPage() {
                           (key === todayKey ? " year-grid__day--today" : "")
                         }
                         title={dayEvents.map((e) => e.title).join(", ") || undefined}
-                        onClick={() => navigate(`/calendar/month/${year}/${monthIndex + 1}`)}
+                        onClick={() => navigate(`/${projectSlug}/calendar/month/${year}/${monthIndex + 1}`)}
                       >
                         {day.date.getDate()}
                       </button>
@@ -211,7 +211,7 @@ export function CalendarYearPage() {
             }
           }}
           onDelete={
-            modalState.event
+            modalState.event && canEdit
               ? () => {
                   if (confirm(`Delete "${modalState.event!.title}"?`)) {
                     deleteMutation.mutate(modalState.event!.id);

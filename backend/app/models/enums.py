@@ -16,6 +16,18 @@ class TeamRole(str, enum.Enum):
     LEAD = "lead"
 
 
+class ProjectStatus(str, enum.Enum):
+    """A project's lifecycle stage. DRAFT is being configured (dates, teams,
+    milestones) before anyone works in it day-to-day; ACTIVE is the one
+    project members normally edit; COMPLETED means the season finished but
+    hasn't been formally archived yet; ARCHIVED is read-only history."""
+
+    DRAFT = "draft"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    ARCHIVED = "archived"
+
+
 class UserStatus(str, enum.Enum):
     PENDING = "pending"
     ACTIVE = "active"

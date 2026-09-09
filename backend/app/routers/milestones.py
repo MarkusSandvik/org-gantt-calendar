@@ -26,7 +26,7 @@ def _get_milestone_or_404(db: Session, milestone_id: int) -> Milestone:
 
 @router.get("", response_model=list[MilestoneRead])
 def list_milestones(
-    project_id: int | None = None,
+    project_id: int,
     team_id: int | None = None,
     owner_user_id: int | None = None,
     status: MilestoneStatus | None = None,

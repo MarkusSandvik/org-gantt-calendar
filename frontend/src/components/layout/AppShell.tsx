@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { branding } from "../../branding";
+import { useProject } from "../../contexts/ProjectContext";
 import { useCurrentUser, useLogout } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { GlobalSearch } from "./GlobalSearch";
+import { ProjectSelector } from "./ProjectSelector";
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
 const THEME_LABEL: Record<ThemePreference, string> = {
@@ -28,14 +30,16 @@ function ThemeToggle() {
   );
 }
 
-const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/gantt", label: "Project Schedule" },
-  { to: "/calendar", label: "Calendar" },
-  { to: "/milestones", label: "Milestones" },
-  { to: "/my-tasks", label: "My Tasks" },
-  { to: "/admin", label: "Admin" },
-];
+function buildNavItems(projectSlug: string) {
+  return [
+    { to: `/${projectSlug}`, label: "Dashboard", end: true },
+    { to: `/${projectSlug}/gantt`, label: "Project Schedule" },
+    { to: `/${projectSlug}/calendar`, label: "Calendar" },
+    { to: `/${projectSlug}/milestones`, label: "Milestones" },
+    { to: `/${projectSlug}/my-tasks`, label: "My Tasks" },
+    { to: `/${projectSlug}/admin`, label: "Admin" },
+  ];
+}
 
 function CurrentUserBadge() {
   const { me } = useCurrentUser();
@@ -65,10 +69,14 @@ function CurrentUserBadge() {
 export function AppShell() {
   const [navOpen, setNavOpen] = useState(false);
   const location = useLocation();
+  const { project } = useProject();
 
   useEffect(() => {
     setNavOpen(false);
   }, [location.pathname]);
+
+  if (!project) return null;
+  const navItems = buildNavItems(project.slug);
 
   return (
     <div className="app-shell">
@@ -83,7 +91,7 @@ export function AppShell() {
         </div>
         <nav>
           <ul>
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
@@ -117,6 +125,7 @@ export function AppShell() {
             ☰
           </button>
           <GlobalSearch />
+          <ProjectSelector />
           <CurrentUserBadge />
         </div>
         <Outlet />

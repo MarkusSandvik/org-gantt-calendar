@@ -3,11 +3,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import permissions
-from app.models.enums import GlobalRole, TeamRole, UserStatus
+from app.models.enums import GlobalRole, ProjectStatus, TeamRole, UserStatus
+from app.models.project import Project
 from app.models.team import Team, TeamMembership
 from app.models.user import User
 from app.schemas.user import TeamMembershipSet, UserAdminRead, UserAdminTeamMembership
 from app.services import audit_log as audit_log_service
+from app.services.projects import ensure_project_editable
 
 
 def _serialize(db: Session, user: User) -> UserAdminRead:
@@ -83,17 +85,27 @@ def set_team_membership(
     permissions.require(permissions.can_manage_team(actor))
 
     target = _get_user_or_404(db, target_user_id)
-    if db.get(Team, payload.team_id) is None:
+    team = db.get(Team, payload.team_id)
+    if team is None:
         raise HTTPException(status_code=404, detail="Team not found")
+    ensure_project_editable(db, team.project_id)
 
     if payload.team_role == TeamRole.LEAD:
-        # A user leads at most one team — demote any existing Lead
-        # membership elsewhere before granting this one (see RBAC_PLAN.md).
+        # A user leads at most one team within a live project — demote any
+        # existing Lead membership elsewhere before granting this one (see
+        # RBAC_PLAN.md). Scoped to DRAFT/ACTIVE projects only: a Lead record
+        # on a COMPLETED or ARCHIVED project's team is history and must
+        # never be silently rewritten just because the same person leads a
+        # new season's team.
         for existing in db.scalars(
-            select(TeamMembership).where(
+            select(TeamMembership)
+            .join(Team, Team.id == TeamMembership.team_id)
+            .join(Project, Project.id == Team.project_id)
+            .where(
                 TeamMembership.user_id == target.id,
                 TeamMembership.team_role == TeamRole.LEAD,
                 TeamMembership.team_id != payload.team_id,
+                Project.status.in_([ProjectStatus.DRAFT, ProjectStatus.ACTIVE]),
             )
         ):
             existing.team_role = TeamRole.MEMBER
@@ -151,6 +163,9 @@ def remove_team_membership(db: Session, actor: User, target_user_id: int, team_i
     ).first()
     if membership is None:
         raise HTTPException(status_code=404, detail="Team membership not found")
+    team = db.get(Team, team_id)
+    if team is not None:
+        ensure_project_editable(db, team.project_id)
 
     audit_log_service.write_field_changes(
         db,

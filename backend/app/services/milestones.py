@@ -20,6 +20,7 @@ from app.schemas.milestone import (
 )
 from app.services import audit_log as audit_log_service
 from app.services import comments as comment_service
+from app.services.projects import ensure_project_editable
 
 AUDITED_MILESTONE_FIELDS = ("title", "description", "date", "team_id", "all_teams", "owner_user_id")
 
@@ -139,6 +140,7 @@ def get_milestone(db: Session, milestone_id: int) -> MilestoneRead:
 
 
 def create_milestone(db: Session, payload: MilestoneCreate) -> MilestoneRead:
+    ensure_project_editable(db, payload.project_id)
     _validate_team_scope(payload.all_teams, payload.team_id)
     if payload.team_id is not None:
         _get_team_or_404(db, payload.team_id)
@@ -171,6 +173,7 @@ def update_milestone(
     milestone = db.get(Milestone, milestone_id)
     if milestone is None:
         raise HTTPException(status_code=404, detail="Milestone not found")
+    ensure_project_editable(db, milestone.project_id)
 
     data = payload.model_dump(exclude_unset=True)
     reason = data.pop("reason", None)
@@ -226,6 +229,7 @@ def delete_milestone(db: Session, milestone_id: int) -> None:
     milestone = db.get(Milestone, milestone_id)
     if milestone is None:
         raise HTTPException(status_code=404, detail="Milestone not found")
+    ensure_project_editable(db, milestone.project_id)
 
     blocking = db.scalars(
         select(Dependency).where(

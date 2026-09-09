@@ -16,7 +16,7 @@ PASSWORD = "invite-test-password-123"
 
 @pytest.fixture()
 def team_and_lead(db_session: Session):
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     team = Team(project=project, name="Embedded", category=TeamCategory.HARDWARE)
     lead = User(
         name="Lead",

@@ -156,7 +156,9 @@ def test_list_dependencies(client: TestClient, seed_basics: dict[str, int]) -> N
         },
     )
 
-    result = client.get("/api/v1/dependencies").json()
+    result = client.get(
+        "/api/v1/dependencies", params={"project_id": seed_basics["project_id"]}
+    ).json()
     assert len(result) == 1
     assert result[0]["predecessor_label"] == "A"
     assert result[0]["successor_label"] == "B"
@@ -177,4 +179,9 @@ def test_delete_dependency(client: TestClient, seed_basics: dict[str, int]) -> N
 
     response = client.delete(f"/api/v1/dependencies/{created['id']}")
     assert response.status_code == 204
-    assert client.get("/api/v1/dependencies").json() == []
+    assert (
+        client.get(
+            "/api/v1/dependencies", params={"project_id": seed_basics["project_id"]}
+        ).json()
+        == []
+    )

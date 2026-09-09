@@ -13,7 +13,7 @@ PASSWORD = "admin-test-password-123"
 
 @pytest.fixture()
 def admin_world(db_session: Session):
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     embedded = Team(project=project, name="Embedded", category=TeamCategory.HARDWARE)
     mechanical = Team(project=project, name="Mechanical", category=TeamCategory.HARDWARE)
     db_session.add_all([project, embedded, mechanical])

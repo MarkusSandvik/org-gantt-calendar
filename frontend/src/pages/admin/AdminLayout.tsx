@@ -1,7 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 
-const SECTIONS: { label: string; to: string | null; note: string; requiresUserAdmin?: boolean }[] = [
+const SECTIONS: {
+  label: string;
+  to: string | null;
+  note: string;
+  requiresUserAdmin?: boolean;
+  requiresAdmin?: boolean;
+}[] = [
   { label: "Activities", to: "activities", note: "" },
   { label: "Teams", to: "teams", note: "" },
   { label: "Tags", to: "tags", note: "" },
@@ -9,12 +15,15 @@ const SECTIONS: { label: string; to: string | null; note: string; requiresUserAd
   { label: "Dependencies", to: "dependencies", note: "" },
   { label: "Baselines", to: "baselines", note: "" },
   { label: "Import / Export", to: "import-export", note: "" },
+  { label: "Projects", to: "projects", note: "", requiresAdmin: true },
   { label: "Settings", to: null, note: "Arrives in a later phase" },
 ];
 
 export function AdminLayout() {
-  const { canViewUserAdmin } = usePermissions();
-  const sections = SECTIONS.filter((s) => !s.requiresUserAdmin || canViewUserAdmin);
+  const { canViewUserAdmin, isAdmin } = usePermissions();
+  const sections = SECTIONS.filter(
+    (s) => (!s.requiresUserAdmin || canViewUserAdmin) && (!s.requiresAdmin || isAdmin),
+  );
 
   return (
     <div className="page">

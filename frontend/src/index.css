@@ -547,6 +547,117 @@ textarea:focus-visible,
   color: var(--color-text-muted);
 }
 
+/* Project selector */
+
+.project-selector {
+  position: relative;
+}
+
+.project-selector__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.project-selector__trigger:hover {
+  background: var(--color-bg);
+}
+
+.project-selector__name {
+  font-weight: 600;
+}
+
+.project-selector__caret {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.project-selector__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
+.project-selector__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 260px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+}
+
+.project-selector__group-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 6px 8px 2px;
+}
+
+.project-selector__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+button.project-selector__item:hover {
+  background: var(--color-bg);
+}
+
+.project-selector__item--active {
+  cursor: default;
+}
+
+.project-status-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.project-status-badge--draft {
+  background: var(--color-badge-neutral-bg);
+  color: var(--color-text-muted);
+}
+
+.project-status-badge--active {
+  background: var(--color-badge-success-bg);
+  color: var(--color-badge-success-text);
+}
+
+.project-status-badge--completed {
+  background: var(--color-badge-info-bg);
+  color: var(--color-badge-info-text);
+}
+
+.project-status-badge--archived {
+  background: var(--color-badge-warning-bg);
+  color: var(--color-badge-warning-text);
+}
+
 /* Admin tabs */
 
 .admin-tabs {
@@ -688,6 +799,11 @@ textarea:focus-visible,
 
 .data-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.data-table__actions {
+  display: flex;
+  gap: 6px;
 }
 
 .data-table tbody tr {

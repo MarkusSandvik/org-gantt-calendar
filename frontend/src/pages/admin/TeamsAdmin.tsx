@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type { Project, Team, TeamCreatePayload, TeamUpdatePayload } from "../../api/types";
+import type { Team, TeamCreatePayload, TeamUpdatePayload } from "../../api/types";
 import { useToast } from "../../components/Toast";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { TeamFormModal } from "./TeamFormModal";
 
@@ -17,11 +18,8 @@ export function TeamsAdmin() {
   const { showToast } = useToast();
   const { canManageTeams } = usePermissions();
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: teams, isLoading } = useQuery({
     queryKey: ["teams"],
@@ -82,7 +80,7 @@ export function TeamsAdmin() {
           Every active team, its category, and who leads and staffs it. Click a row to see its
           members.
         </p>
-        {canManageTeams && (
+        {canManageTeams && canEdit && (
           <button className="button button--primary" onClick={() => setModalTeam(null)}>
             New Team
           </button>
@@ -116,7 +114,7 @@ export function TeamsAdmin() {
                   <td>{lead?.name ?? "—"}</td>
                   <td>{team.members.length}</td>
                   <td>
-                    {canManageTeams && (
+                    {canManageTeams && canEdit && (
                       <button
                         className="button"
                         onClick={(e) => {
@@ -180,7 +178,7 @@ export function TeamsAdmin() {
             }
           }}
           onDelete={
-            modalTeam
+            modalTeam && canEdit
               ? () => {
                   if (confirm(`Delete team "${modalTeam.name}"? This cannot be undone.`)) {
                     deleteMutation.mutate(modalTeam.id);

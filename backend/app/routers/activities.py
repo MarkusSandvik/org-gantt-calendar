@@ -26,7 +26,7 @@ def _get_activity_or_404(db: Session, activity_id: int) -> Activity:
 
 @router.get("", response_model=list[ActivityRead])
 def list_activities(
-    project_id: int | None = None,
+    project_id: int,
     team_id: int | None = None,
     owner_user_id: int | None = None,
     contributor_user_id: int | None = None,

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import type { Activity, CalendarEvent, Milestone, Project } from "../api/types";
+import type { Activity, CalendarEvent, Milestone } from "../api/types";
 import { MilestoneStatusBadge } from "../components/MilestoneStatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { StatusBadge } from "../components/StatusBadge";
+import { useProject } from "../contexts/ProjectContext";
 import { useCurrentUser } from "../hooks/useAuth";
 import { formatISODate } from "../utils/date";
 
@@ -28,11 +29,8 @@ export function MyTasks() {
   const { me } = useCurrentUser();
   const userId = me?.id;
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project } = useProject();
+  const projectId = project?.id;
 
   const { data: ownedActivities } = useQuery({
     queryKey: ["activities", "my-tasks-owned", projectId, userId],
@@ -102,7 +100,9 @@ export function MyTasks() {
                 <tr
                   key={activity.id}
                   onClick={() =>
-                    navigate(`/admin/activities?q=${encodeURIComponent(activity.title)}`)
+                    navigate(
+                      `/${project?.slug}/admin/activities?q=${encodeURIComponent(activity.title)}`,
+                    )
                   }
                 >
                   <td>{activity.title}</td>

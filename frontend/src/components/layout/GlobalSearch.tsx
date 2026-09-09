@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import type { SearchResult, SearchResultType } from "../../api/types";
+import { useProject } from "../../contexts/ProjectContext";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const TYPE_LABELS: Record<SearchResultType, string> = {
@@ -33,6 +34,8 @@ function isTypingTarget(element: Element | null): boolean {
 
 export function GlobalSearch() {
   const navigate = useNavigate();
+  const { project } = useProject();
+  const projectSlug = project?.slug;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 250);
@@ -60,19 +63,19 @@ export function GlobalSearch() {
     setOpen(false);
     switch (result.type) {
       case "activity":
-        navigate(`/admin/activities?q=${encodeURIComponent(result.label)}`);
+        navigate(`/${projectSlug}/admin/activities?q=${encodeURIComponent(result.label)}`);
         break;
       case "milestone":
-        navigate(`/gantt?q=${encodeURIComponent(result.label)}`);
+        navigate(`/${projectSlug}/gantt?q=${encodeURIComponent(result.label)}`);
         break;
       case "team":
-        navigate(`/admin/activities?team_id=${result.id}`);
+        navigate(`/${projectSlug}/admin/activities?team_id=${result.id}`);
         break;
       case "tag":
-        navigate(`/admin/activities?tag_id=${result.id}`);
+        navigate(`/${projectSlug}/admin/activities?tag_id=${result.id}`);
         break;
       case "user":
-        navigate(`/admin/activities?owner_user_id=${result.id}`);
+        navigate(`/${projectSlug}/admin/activities?owner_user_id=${result.id}`);
         break;
     }
   }

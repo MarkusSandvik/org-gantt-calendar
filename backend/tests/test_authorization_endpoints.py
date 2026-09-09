@@ -24,7 +24,7 @@ def rbac_world(db_session: Session):
     """Embedded and Mechanical teams, each with a Lead and a Member, plus
     an Embedded activity/milestone/calendar-event to exercise ownership
     and cross-team checks against."""
-    project = Project(name="RBAC Test Project")
+    project = Project(name="RBAC Test Project", slug="rbac-test-project")
     embedded = Team(project=project, name="Embedded", category=TeamCategory.HARDWARE)
     mechanical = Team(project=project, name="Mechanical", category=TeamCategory.HARDWARE)
     db_session.add_all([project, embedded, mechanical])

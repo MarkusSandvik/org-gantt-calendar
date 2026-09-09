@@ -19,7 +19,7 @@ PASSWORD = "audit-test-password-123"
 
 @pytest.fixture()
 def world(db_session: Session):
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     team = Team(project=project, name="Embedded", category=TeamCategory.HARDWARE)
     member = User(
         name="Audit Member",

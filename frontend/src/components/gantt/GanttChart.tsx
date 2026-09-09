@@ -3,8 +3,9 @@ import { toPng } from "html-to-image";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
-import type { Activity, Dependency, Milestone, Project, Tag, Team, User } from "../../api/types";
+import type { Activity, Dependency, Milestone, Tag, Team, User } from "../../api/types";
 import { FilterBar } from "../filters/FilterBar";
+import { useProject } from "../../contexts/ProjectContext";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { usePermissions } from "../../hooks/usePermissions";
 import { DependencyArrows } from "./DependencyArrows";
@@ -109,11 +110,7 @@ export function GanttChart() {
   const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
   const { canEditActivity, canManageMilestone } = usePermissions();
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const project = projects?.[0];
+  const { project, canEdit } = useProject();
   const projectId = project?.id;
 
   const { data: teams } = useQuery({
@@ -155,8 +152,9 @@ export function GanttChart() {
     enabled: projectId != null,
   });
   const { data: dependencies } = useQuery({
-    queryKey: ["dependencies"],
-    queryFn: () => api.get<Dependency[]>("/dependencies"),
+    queryKey: ["dependencies", { projectId }],
+    queryFn: () => api.get<Dependency[]>(`/dependencies?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const range = useMemo(() => {
@@ -377,7 +375,9 @@ export function GanttChart() {
               rangeEnd={range.end}
               zoom={zoom}
               labelWidth={LABEL_WIDTH}
-              onWeekClick={(isoYear, isoWeek) => navigate(`/calendar/week/${isoYear}/${isoWeek}`)}
+              onWeekClick={(isoYear, isoWeek) =>
+                navigate(`/${project?.slug}/calendar/week/${isoYear}/${isoWeek}`)
+              }
             />
 
             <div className="gantt-body" style={{ position: "relative" }}>
@@ -408,7 +408,7 @@ export function GanttChart() {
                             rangeStart={range.start}
                             zoom={zoom}
                             onClick={
-                              canManageMilestone(m)
+                              canManageMilestone(m) && canEdit
                                 ? () =>
                                     setReschedule({
                                       entityType: "milestone",
@@ -452,7 +452,7 @@ export function GanttChart() {
                           rangeStart={range.start}
                           zoom={zoom}
                           onClick={
-                            canEditActivity(activity)
+                            canEditActivity(activity) && canEdit
                               ? () =>
                                   setReschedule({
                                     entityType: "activity",

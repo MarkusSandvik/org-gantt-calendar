@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import type {
   Activity,
   Dependency,
   DependencyWritePayload,
   Milestone,
-  Project,
   SchedulableType,
 } from "../../api/types";
 
@@ -30,13 +30,10 @@ function decodeOption(value: string): { type: SchedulableType; id: number } | nu
 export function DependenciesAdmin() {
   const queryClient = useQueryClient();
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
-  const canManageDependencies = isAdmin || isLeadOfAnyTeam;
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
+  const canManageDependencies = (isAdmin || isLeadOfAnyTeam) && canEdit;
 
   const { data: activities } = useQuery({
     queryKey: ["activities", "all", { projectId }],
@@ -49,8 +46,9 @@ export function DependenciesAdmin() {
     enabled: projectId != null,
   });
   const { data: dependencies } = useQuery({
-    queryKey: ["dependencies"],
-    queryFn: () => api.get<Dependency[]>("/dependencies"),
+    queryKey: ["dependencies", { projectId }],
+    queryFn: () => api.get<Dependency[]>(`/dependencies?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const options: EndpointOption[] = [

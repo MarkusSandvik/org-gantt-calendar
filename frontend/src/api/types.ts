@@ -1,10 +1,28 @@
+export type ProjectStatus = "draft" | "active" | "completed" | "archived";
+
 export interface Project {
   id: number;
   name: string;
+  slug: string;
+  season_label: string | null;
   description: string | null;
   start_date: string | null;
   end_date: string | null;
+  status: ProjectStatus;
+  is_default: boolean;
   auto_scheduling_enabled: boolean;
+  archived_at: string | null;
+  created_by_id: number | null;
+}
+
+export interface ProjectCreatePayload {
+  name: string;
+  slug?: string;
+  season_label?: string;
+  description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  copy_structure_from_project_id?: number | null;
 }
 
 export type TeamCategory = "hardware" | "software" | "organization";
@@ -212,6 +230,7 @@ export type DependencyType = "finish_to_start";
 
 export interface Dependency {
   id: number;
+  project_id: number;
   predecessor_type: SchedulableType;
   predecessor_id: number;
   predecessor_label: string;

@@ -14,6 +14,7 @@ from app.schemas.calendar_event import (
     CalendarEventRead,
     CalendarEventUpdate,
 )
+from app.services.projects import ensure_project_editable
 
 
 def _validate_dates(start: dt.datetime, end: dt.datetime) -> None:
@@ -86,6 +87,7 @@ def get_calendar_event(db: Session, event_id: int) -> CalendarEventRead:
 def create_calendar_event(
     db: Session, payload: CalendarEventCreate
 ) -> CalendarEventRead:
+    ensure_project_editable(db, payload.project_id)
     _validate_dates(payload.start_datetime, payload.end_datetime)
     _validate_team_scope(payload.all_teams, payload.team_id)
     if payload.team_id is not None:
@@ -108,6 +110,7 @@ def update_calendar_event(
     event = db.get(CalendarEvent, event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Calendar event not found")
+    ensure_project_editable(db, event.project_id)
 
     data = payload.model_dump(exclude_unset=True)
     new_start = data.get("start_datetime", event.start_datetime)
@@ -136,5 +139,6 @@ def delete_calendar_event(db: Session, event_id: int) -> None:
     event = db.get(CalendarEvent, event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Calendar event not found")
+    ensure_project_editable(db, event.project_id)
     db.delete(event)
     db.commit()

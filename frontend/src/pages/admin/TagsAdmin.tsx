@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type { Project, Tag, TagCreatePayload, TagUpdatePayload } from "../../api/types";
+import type { Tag, TagCreatePayload, TagUpdatePayload } from "../../api/types";
 import { useToast } from "../../components/Toast";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { TagFormModal } from "./TagFormModal";
 
@@ -11,11 +12,8 @@ export function TagsAdmin() {
   const { showToast } = useToast();
   const { canManageTags } = usePermissions();
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: tags, isLoading } = useQuery({
     queryKey: ["tags"],
@@ -69,7 +67,7 @@ export function TagsAdmin() {
     <div>
       <div className="toolbar">
         <p className="page__phase-note">Every active tag available to apply to activities.</p>
-        {canManageTags && (
+        {canManageTags && canEdit && (
           <button className="button button--primary" onClick={() => setModalTag(null)}>
             New Tag
           </button>
@@ -96,7 +94,7 @@ export function TagsAdmin() {
                 </td>
                 <td>{tag.color ?? "—"}</td>
                 <td>
-                  {canManageTags && (
+                  {canManageTags && canEdit && (
                     <button className="button" onClick={() => setModalTag(tag)}>
                       Edit
                     </button>
@@ -124,7 +122,7 @@ export function TagsAdmin() {
             }
           }}
           onDelete={
-            modalTag
+            modalTag && canEdit
               ? () => {
                   if (confirm(`Delete tag "${modalTag.name}"? This cannot be undone.`)) {
                     deleteMutation.mutate(modalTag.id);

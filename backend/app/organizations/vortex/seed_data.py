@@ -23,6 +23,7 @@ from app.models.enums import (
     GlobalRole,
     MilestoneStatus,
     Priority,
+    ProjectStatus,
     SchedulableType,
     TaggableType,
     TeamCategory,
@@ -108,9 +109,13 @@ LEGACY_MEMBERSHIP_DEFS = [
 def seed(db: Session) -> None:
     project = Project(
         name="AUV 2026",
+        slug="auv-2026",
+        season_label="2026/27",
         description="Autonomous underwater vehicle competition project.",
         start_date=dt.date(2026, 8, 1),
         end_date=dt.date(2027, 6, 30),
+        status=ProjectStatus.ACTIVE,
+        is_default=True,
         auto_scheduling_enabled=False,
     )
     db.add(project)
@@ -329,6 +334,7 @@ def seed(db: Session) -> None:
     db.add_all(
         [
             Dependency(
+                project_id=project.id,
                 predecessor_type=SchedulableType.ACTIVITY,
                 predecessor_id=pcb_design.id,
                 successor_type=SchedulableType.ACTIVITY,
@@ -337,6 +343,7 @@ def seed(db: Session) -> None:
                 lag_days=2,
             ),
             Dependency(
+                project_id=project.id,
                 predecessor_type=SchedulableType.ACTIVITY,
                 predecessor_id=pcb_assembly.id,
                 successor_type=SchedulableType.ACTIVITY,
@@ -345,6 +352,7 @@ def seed(db: Session) -> None:
                 lag_days=1,
             ),
             Dependency(
+                project_id=project.id,
                 predecessor_type=SchedulableType.ACTIVITY,
                 predecessor_id=system_integration.id,
                 successor_type=SchedulableType.ACTIVITY,

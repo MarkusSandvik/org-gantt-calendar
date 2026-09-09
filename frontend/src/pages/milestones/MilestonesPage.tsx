@@ -6,13 +6,13 @@ import type {
   Milestone,
   MilestoneStatus,
   MilestoneWritePayload,
-  Project,
   Tag,
   Team,
   User,
 } from "../../api/types";
 import { MilestoneStatusBadge } from "../../components/MilestoneStatusBadge";
 import { useToast } from "../../components/Toast";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { MilestoneFormModal } from "./MilestoneFormModal";
 
@@ -30,11 +30,8 @@ export function MilestonesPage() {
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
   const canCreateAnywhere = isAdmin || isLeadOfAnyTeam;
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: teams } = useQuery({
     queryKey: ["teams"],
@@ -49,8 +46,9 @@ export function MilestonesPage() {
     queryFn: () => api.get<Tag[]>("/tags"),
   });
   const { data: dependencies } = useQuery({
-    queryKey: ["dependencies"],
-    queryFn: () => api.get<Dependency[]>("/dependencies"),
+    queryKey: ["dependencies", { projectId }],
+    queryFn: () => api.get<Dependency[]>(`/dependencies?project_id=${projectId}`),
+    enabled: projectId != null,
   });
 
   const [teamFilter, setTeamFilter] = useState("");
@@ -143,7 +141,7 @@ export function MilestonesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {canCreateAnywhere && (
+        {canCreateAnywhere && canEdit && (
           <button className="button button--primary" onClick={() => setModalMilestone(null)}>
             New Milestone
           </button>
@@ -215,7 +213,7 @@ export function MilestonesPage() {
             }
           }}
           onDelete={
-            modalMilestone
+            modalMilestone && canEdit
               ? () => {
                   if (confirm(`Delete "${modalMilestone.title}"? This cannot be undone.`)) {
                     deleteMutation.mutate(modalMilestone.id);

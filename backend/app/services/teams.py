@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.team import Team, TeamMembership
 from app.schemas.team import TeamCreate, TeamMemberRead, TeamUpdate, TeamWithMembersRead
+from app.services.projects import ensure_project_editable
 
 
 def _serialize(db: Session, team: Team) -> TeamWithMembersRead:
@@ -48,6 +49,7 @@ def _get_team_or_404(db: Session, team_id: int) -> Team:
 
 
 def create_team(db: Session, payload: TeamCreate) -> TeamWithMembersRead:
+    ensure_project_editable(db, payload.project_id)
     next_sort_order = (
         db.scalar(select(Team.sort_order).order_by(Team.sort_order.desc()).limit(1)) or 0
     ) + 1
@@ -66,6 +68,7 @@ def create_team(db: Session, payload: TeamCreate) -> TeamWithMembersRead:
 
 def update_team(db: Session, team_id: int, payload: TeamUpdate) -> TeamWithMembersRead:
     team = _get_team_or_404(db, team_id)
+    ensure_project_editable(db, team.project_id)
     data = payload.model_dump(exclude_unset=True)
     for field, value in data.items():
         setattr(team, field, value)
@@ -76,5 +79,6 @@ def update_team(db: Session, team_id: int, payload: TeamUpdate) -> TeamWithMembe
 
 def delete_team(db: Session, team_id: int) -> None:
     team = _get_team_or_404(db, team_id)
+    ensure_project_editable(db, team.project_id)
     team.archived_at = dt.datetime.now(dt.UTC).replace(tzinfo=None)
     db.commit()

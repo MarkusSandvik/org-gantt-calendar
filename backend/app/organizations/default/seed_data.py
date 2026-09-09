@@ -24,6 +24,7 @@ from app.models.enums import (
     GlobalRole,
     MilestoneStatus,
     Priority,
+    ProjectStatus,
     SchedulableType,
     TaggableType,
     TeamCategory,
@@ -69,9 +70,13 @@ MEMBERSHIP_DEFS = [
 def seed(db: Session) -> None:
     project = Project(
         name="Sample Project",
+        slug="sample-project",
+        season_label=None,
         description="Example project demonstrating scheduling and collaboration features.",
         start_date=dt.date(2026, 1, 1),
         end_date=dt.date(2026, 12, 31),
+        status=ProjectStatus.ACTIVE,
+        is_default=True,
         auto_scheduling_enabled=False,
     )
     db.add(project)
@@ -189,6 +194,7 @@ def seed(db: Session) -> None:
     db.add_all(
         [
             Dependency(
+                project_id=project.id,
                 predecessor_type=SchedulableType.ACTIVITY,
                 predecessor_id=design.id,
                 successor_type=SchedulableType.ACTIVITY,
@@ -197,6 +203,7 @@ def seed(db: Session) -> None:
                 lag_days=1,
             ),
             Dependency(
+                project_id=project.id,
                 predecessor_type=SchedulableType.ACTIVITY,
                 predecessor_id=build.id,
                 successor_type=SchedulableType.ACTIVITY,

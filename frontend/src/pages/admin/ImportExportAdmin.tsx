@@ -1,12 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { api, ApiError } from "../../api/client";
+import { useProject } from "../../contexts/ProjectContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import type {
   ImportApplyResponse,
   ImportPreviewResponse,
   ImportRowResult,
-  Project,
 } from "../../api/types";
 
 function RowErrors({ row }: { row: ImportRowResult }) {
@@ -61,18 +61,15 @@ function ImportResultTable({ rows }: { rows: ImportRowResult[] }) {
 export function ImportExportAdmin() {
   const queryClient = useQueryClient();
   const { isAdmin, isLeadOfAnyTeam } = usePermissions();
-  const canImport = isAdmin || isLeadOfAnyTeam;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
   const [applyResult, setApplyResult] = useState<ImportApplyResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
+  const canImport = (isAdmin || isLeadOfAnyTeam) && canEdit;
 
   const previewMutation = useMutation({
     mutationFn: (file: File) => {

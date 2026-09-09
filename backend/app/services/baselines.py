@@ -11,6 +11,7 @@ from app.schemas.baseline import (
     BaselineDriftItem,
     BaselineRead,
 )
+from app.services.projects import ensure_project_editable
 
 
 def create_baseline(
@@ -20,6 +21,7 @@ def create_baseline(
     Each call creates a brand new Baseline row — existing baselines are
     never touched, so schedule drift can always be measured against any
     past snapshot, not just the most recent one."""
+    ensure_project_editable(db, project_id)
     baseline = Baseline(
         project_id=project_id, name=payload.name, note=payload.note, created_by_id=user_id
     )

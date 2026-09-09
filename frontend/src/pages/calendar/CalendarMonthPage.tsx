@@ -6,7 +6,6 @@ import type {
   Activity,
   CalendarEvent,
   CalendarEventWritePayload,
-  Project,
   Team,
   User,
 } from "../../api/types";
@@ -14,6 +13,7 @@ import { CalendarEventModal } from "../../components/calendar/CalendarEventModal
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
 import { MonthGrid } from "../../components/calendar/MonthGrid";
 import { buildMonthGrid } from "../../components/calendar/monthLayout";
+import { useProject } from "../../contexts/ProjectContext";
 import { addDays, formatISODate, getISOWeek } from "../../utils/date";
 
 const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
@@ -26,11 +26,8 @@ export function CalendarMonthPage() {
   const [year, setYear] = useState(params.year ? Number(params.year) : today.getFullYear());
   const [month, setMonth] = useState(params.month ? Number(params.month) - 1 : today.getMonth());
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
 
   const { data: teams } = useQuery({
     queryKey: ["teams"],
@@ -104,9 +101,10 @@ export function CalendarMonthPage() {
     setMonth(next.getMonth());
   }
 
-  if (!projectId) {
+  if (!project) {
     return <p>Loading calendar...</p>;
   }
+  const projectSlug = project.slug;
 
   return (
     <div className="page">
@@ -134,31 +132,33 @@ export function CalendarMonthPage() {
         <h2 className="calendar-toolbar__label">{MONTH_LABEL.format(new Date(year, month, 1))}</h2>
         <CalendarViewSwitcher
           active="month"
-          monthHref={`/calendar/month/${year}/${month + 1}`}
-          weekHref={`/calendar/week/${weekOfFirst.isoYear}/${weekOfFirst.week}`}
-          yearHref={`/calendar/year/${year}`}
+          monthHref={`/${projectSlug}/calendar/month/${year}/${month + 1}`}
+          weekHref={`/${projectSlug}/calendar/week/${weekOfFirst.isoYear}/${weekOfFirst.week}`}
+          yearHref={`/${projectSlug}/calendar/year/${year}`}
         />
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => setModalState({ event: null, defaultDate: today })}
-        >
-          New Event
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => setModalState({ event: null, defaultDate: today })}
+          >
+            New Event
+          </button>
+        )}
       </div>
 
       <MonthGrid
         year={year}
         month={month}
         events={events ?? []}
-        onDayClick={(date) => setModalState({ event: null, defaultDate: date })}
+        onDayClick={canEdit ? (date) => setModalState({ event: null, defaultDate: date }) : () => {}}
         onEventClick={(event) => setModalState({ event, defaultDate: null })}
-        onWeekClick={(isoYear, isoWeek) => navigate(`/calendar/week/${isoYear}/${isoWeek}`)}
+        onWeekClick={(isoYear, isoWeek) => navigate(`/${projectSlug}/calendar/week/${isoYear}/${isoWeek}`)}
       />
 
       {modalState && teams && users && activities && (
         <CalendarEventModal
-          projectId={projectId}
+          projectId={project.id}
           event={modalState.event}
           defaultDate={modalState.defaultDate}
           teams={teams}
@@ -176,7 +176,7 @@ export function CalendarMonthPage() {
             }
           }}
           onDelete={
-            modalState.event
+            modalState.event && canEdit
               ? () => {
                   if (confirm(`Delete "${modalState.event!.title}"?`)) {
                     deleteMutation.mutate(modalState.event!.id);

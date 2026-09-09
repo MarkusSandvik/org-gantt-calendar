@@ -86,12 +86,16 @@ def test_list_milestones_filter_by_status_and_tag(
         json=make_payload(seed_basics, title="At risk thing", status="at_risk"),
     )
 
-    at_risk = client.get("/api/v1/milestones", params={"status": "at_risk"}).json()
+    at_risk = client.get(
+        "/api/v1/milestones",
+        params={"project_id": seed_basics["project_id"], "status": "at_risk"},
+    ).json()
     assert len(at_risk) == 1
     assert at_risk[0]["title"] == "At risk thing"
 
     tagged = client.get(
-        "/api/v1/milestones", params={"tag_id": seed_basics["tag_id"]}
+        "/api/v1/milestones",
+        params={"project_id": seed_basics["project_id"], "tag_id": seed_basics["tag_id"]},
     ).json()
     assert len(tagged) == 2
 
@@ -182,6 +186,7 @@ def test_list_milestones_filter_by_owner_user(
     )
 
     mine = client.get(
-        "/api/v1/milestones", params={"owner_user_id": seed_basics["user_id"]}
+        "/api/v1/milestones",
+        params={"project_id": seed_basics["project_id"], "owner_user_id": seed_basics["user_id"]},
     ).json()
     assert [m["title"] for m in mine] == ["Alice's milestone"]

@@ -6,7 +6,6 @@ import type {
   Activity,
   CalendarEvent,
   CalendarEventWritePayload,
-  Project,
   Team,
   User,
 } from "../../api/types";
@@ -14,6 +13,7 @@ import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
+import { useProject } from "../../contexts/ProjectContext";
 import { addDays, formatISODate, getISOWeek, isoWeekToMonday } from "../../utils/date";
 
 const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -34,11 +34,9 @@ export function CalendarWeekPage() {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday]);
   const sunday = days[6];
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project, canEdit } = useProject();
+  const projectId = project?.id;
+  const projectSlug = project?.slug;
 
   const { data: teams } = useQuery({
     queryKey: ["teams"],
@@ -113,7 +111,7 @@ export function CalendarWeekPage() {
   function goToWeek(deltaDays: number) {
     const newMonday = addDays(monday, deltaDays);
     const { isoYear: y, week } = getISOWeek(newMonday);
-    navigate(`/calendar/week/${y}/${week}`);
+    navigate(`/${projectSlug}/calendar/week/${y}/${week}`);
   }
 
   function eventsForDay(day: Date): CalendarEvent[] {
@@ -144,7 +142,7 @@ export function CalendarWeekPage() {
             className="button"
             onClick={() => {
               const { isoYear: y, week } = getISOWeek(new Date());
-              navigate(`/calendar/week/${y}/${week}`);
+              navigate(`/${projectSlug}/calendar/week/${y}/${week}`);
             }}
           >
             This week
@@ -156,17 +154,19 @@ export function CalendarWeekPage() {
         <div className="calendar-toolbar__label" />
         <CalendarViewSwitcher
           active="week"
-          monthHref={`/calendar/month/${monday.getFullYear()}/${monday.getMonth() + 1}`}
-          weekHref={`/calendar/week/${isoYear}/${isoWeek}`}
-          yearHref={`/calendar/year/${monday.getFullYear()}`}
+          monthHref={`/${projectSlug}/calendar/month/${monday.getFullYear()}/${monday.getMonth() + 1}`}
+          weekHref={`/${projectSlug}/calendar/week/${isoYear}/${isoWeek}`}
+          yearHref={`/${projectSlug}/calendar/year/${monday.getFullYear()}`}
         />
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => setModalState({ event: null, defaultDate: monday })}
-        >
-          New Event
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => setModalState({ event: null, defaultDate: monday })}
+          >
+            New Event
+          </button>
+        )}
       </div>
 
       <div className="week-view">
@@ -235,7 +235,7 @@ export function CalendarWeekPage() {
             }
           }}
           onDelete={
-            modalState.event
+            modalState.event && canEdit
               ? () => {
                   if (confirm(`Delete "${modalState.event!.title}"?`)) {
                     deleteMutation.mutate(modalState.event!.id);

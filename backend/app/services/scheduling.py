@@ -19,6 +19,7 @@ from app.schemas.scheduling import (
     SchedulingApplyResponse,
     SchedulingChangeRequest,
 )
+from app.services.projects import ensure_project_editable
 
 NodeKey = tuple[SchedulableType, int]
 Edge = tuple[NodeKey, int]  # (successor_key, lag_days)
@@ -77,28 +78,45 @@ def compute_propagation(
 
 
 def _load_graph(
-    db: Session,
+    db: Session, project_id: int
 ) -> tuple[dict[NodeKey, ScheduleNode], dict[NodeKey, list[Edge]], dict[NodeKey, str]]:
+    """Loads the scheduling graph for exactly one project. Scoping this is
+    not an optimization — a dependency (or activity/milestone id
+    collision-free but cross-project) edge must never let a reschedule in
+    one project propagate into another's dates."""
     nodes: dict[NodeKey, ScheduleNode] = {}
     labels: dict[NodeKey, str] = {}
 
-    for activity in db.scalars(select(Activity)).all():
+    for activity in db.scalars(select(Activity).where(Activity.project_id == project_id)).all():
         key = (SchedulableType.ACTIVITY, activity.id)
         nodes[key] = ScheduleNode(key, activity.start_date, activity.end_date)
         labels[key] = activity.title
 
-    for milestone in db.scalars(select(Milestone)).all():
+    for milestone in db.scalars(
+        select(Milestone).where(Milestone.project_id == project_id)
+    ).all():
         key = (SchedulableType.MILESTONE, milestone.id)
         nodes[key] = ScheduleNode(key, milestone.date, milestone.date)
         labels[key] = milestone.title
 
     adjacency: dict[NodeKey, list[Edge]] = {}
-    for dep in db.scalars(select(Dependency)).all():
+    for dep in db.scalars(select(Dependency).where(Dependency.project_id == project_id)).all():
         pred_key = (dep.predecessor_type, dep.predecessor_id)
         succ_key = (dep.successor_type, dep.successor_id)
         adjacency.setdefault(pred_key, []).append((succ_key, dep.lag_days))
 
     return nodes, adjacency, labels
+
+
+def _get_root_project_id(db: Session, entity_type: SchedulableType, entity_id: int) -> int:
+    obj = (
+        db.get(Activity, entity_id)
+        if entity_type == SchedulableType.ACTIVITY
+        else db.get(Milestone, entity_id)
+    )
+    if obj is None:
+        raise HTTPException(status_code=404, detail=f"{entity_type.value} {entity_id} not found")
+    return obj.project_id
 
 
 def _validate_request(payload: SchedulingChangeRequest) -> None:
@@ -109,16 +127,6 @@ def _validate_request(payload: SchedulingChangeRequest) -> None:
             status_code=422,
             detail="A milestone has a single date; new_start_date and new_end_date must match",
         )
-
-
-def _get_root_or_404(db: Session, entity_type: SchedulableType, entity_id: int) -> None:
-    obj = (
-        db.get(Activity, entity_id)
-        if entity_type == SchedulableType.ACTIVITY
-        else db.get(Milestone, entity_id)
-    )
-    if obj is None:
-        raise HTTPException(status_code=404, detail=f"{entity_type.value} {entity_id} not found")
 
 
 def _build_change_items(
@@ -196,9 +204,9 @@ def preview_schedule_change(
             status_code=403, detail="Only a team Lead or Admin can preview scheduling changes."
         )
     _validate_request(payload)
-    _get_root_or_404(db, payload.entity_type, payload.entity_id)
+    project_id = _get_root_project_id(db, payload.entity_type, payload.entity_id)
 
-    nodes, adjacency, labels = _load_graph(db)
+    nodes, adjacency, labels = _load_graph(db, project_id)
     changed_key = (payload.entity_type, payload.entity_id)
     changes = compute_propagation(
         nodes, adjacency, changed_key, payload.new_start_date, payload.new_end_date
@@ -214,9 +222,10 @@ def apply_schedule_change(
         raise HTTPException(
             status_code=422, detail="A reason is required to apply a scheduling change"
         )
-    _get_root_or_404(db, payload.entity_type, payload.entity_id)
+    project_id = _get_root_project_id(db, payload.entity_type, payload.entity_id)
+    ensure_project_editable(db, project_id)
 
-    nodes, adjacency, labels = _load_graph(db)
+    nodes, adjacency, labels = _load_graph(db, project_id)
     changed_key = (payload.entity_type, payload.entity_id)
     changes = compute_propagation(
         nodes, adjacency, changed_key, payload.new_start_date, payload.new_end_date

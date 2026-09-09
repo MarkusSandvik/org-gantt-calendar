@@ -21,9 +21,11 @@ def _get_dependency_or_404(db: Session, dependency_id: int) -> Dependency:
 
 @router.get("", response_model=list[DependencyRead])
 def list_dependencies(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[DependencyRead]:
-    return dependency_service.list_dependencies(db)
+    return dependency_service.list_dependencies(db, project_id)
 
 
 @router.post("", response_model=DependencyRead, status_code=201)

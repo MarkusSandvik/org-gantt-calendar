@@ -272,6 +272,10 @@ def can_manage_dependency(
 # ---------------------------------------------------------------------------
 
 
+def can_manage_project(user: User) -> bool:
+    return is_admin(user)
+
+
 def can_manage_baseline(user: User) -> bool:
     return is_admin(user)
 

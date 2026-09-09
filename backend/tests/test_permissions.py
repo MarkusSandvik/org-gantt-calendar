@@ -27,7 +27,7 @@ def world(db_session: Session):
     """Two teams, an Admin, a Lead of Embedded, a Member of Embedded, a
     Member of Mechanical, and an activity/milestone/event owned by
     Embedded — the minimum shape every permission check below needs."""
-    project = Project(name="P")
+    project = Project(name="P", slug="p")
     embedded = Team(project=project, name="Embedded", category=TeamCategory.HARDWARE)
     mechanical = Team(project=project, name="Mechanical", category=TeamCategory.HARDWARE)
     admin = User(name="Admin", email="admin@x.org", global_role=GlobalRole.ADMIN)

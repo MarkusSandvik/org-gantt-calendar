@@ -28,7 +28,7 @@ def _get_event_or_404(db: Session, event_id: int) -> CalendarEvent:
 
 @router.get("", response_model=list[CalendarEventRead])
 def list_calendar_events(
-    project_id: int | None = None,
+    project_id: int,
     team_id: int | None = None,
     owner_user_id: int | None = None,
     event_type: CalendarEventType | None = None,

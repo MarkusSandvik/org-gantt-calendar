@@ -23,6 +23,7 @@ class DependencyCreate(BaseModel):
 
 class DependencyRead(BaseModel):
     id: int
+    project_id: int
     predecessor_type: SchedulableType
     predecessor_id: int
     predecessor_label: str

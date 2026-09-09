@@ -113,7 +113,7 @@ def seed_basics(db_session: Session) -> dict[str, int]:
     from app.models.team import Team
     from app.models.user import User
 
-    project = Project(name="Test Project")
+    project = Project(name="Test Project", slug="test-project", is_default=True)
     team = Team(project=project, name="Mechanical", category=TeamCategory.HARDWARE)
     user = User(
         name="Alice",

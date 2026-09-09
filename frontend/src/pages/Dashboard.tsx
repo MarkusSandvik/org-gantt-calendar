@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import type { CalendarEvent, DashboardSummary, Project } from "../api/types";
+import type { CalendarEvent, DashboardSummary } from "../api/types";
 import { StatusBadge } from "../components/StatusBadge";
+import { useProject } from "../contexts/ProjectContext";
 import { addDays, formatISODate, parseISODate } from "../utils/date";
 
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
@@ -11,33 +12,46 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "s
 const METRIC_LABELS: {
   key: keyof DashboardSummary["week_counts"];
   label: string;
-  href: (s: DashboardSummary) => string;
+  href: (s: DashboardSummary, slug: string) => string;
 }[] = [
-  { key: "active_tasks", label: "active tasks", href: () => "/admin/activities?status=in_progress" },
-  { key: "milestones_this_week", label: "milestones", href: () => "/milestones" },
-  { key: "delayed", label: "delayed", href: () => "/admin/activities?status=delayed" },
-  { key: "blocked", label: "blocked", href: () => "/admin/activities?status=blocked" },
+  {
+    key: "active_tasks",
+    label: "active tasks",
+    href: (_s, slug) => `/${slug}/admin/activities?status=in_progress`,
+  },
+  { key: "milestones_this_week", label: "milestones", href: (_s, slug) => `/${slug}/milestones` },
+  {
+    key: "delayed",
+    label: "delayed",
+    href: (_s, slug) => `/${slug}/admin/activities?status=delayed`,
+  },
+  {
+    key: "blocked",
+    label: "blocked",
+    href: (_s, slug) => `/${slug}/admin/activities?status=blocked`,
+  },
   {
     key: "social_activities",
     label: "social activities",
-    href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}`,
+    href: (s, slug) => `/${slug}/calendar/week/${s.iso_year}/${s.iso_week}`,
   },
-  { key: "meetings", label: "meetings", href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}` },
+  {
+    key: "meetings",
+    label: "meetings",
+    href: (s, slug) => `/${slug}/calendar/week/${s.iso_year}/${s.iso_week}`,
+  },
   {
     key: "upcoming_deadlines",
     label: "upcoming deadline",
-    href: (s) => `/calendar/week/${s.iso_year}/${s.iso_week}`,
+    href: (s, slug) => `/${slug}/calendar/week/${s.iso_year}/${s.iso_week}`,
   },
 ];
 
 export function Dashboard() {
   const navigate = useNavigate();
 
-  const { data: projects } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api.get<Project[]>("/projects"),
-  });
-  const projectId = projects?.[0]?.id;
+  const { project } = useProject();
+  const projectId = project?.id;
 
   const { data: summary } = useQuery({
     queryKey: ["dashboard-summary", projectId],
@@ -54,9 +68,10 @@ export function Dashboard() {
     enabled: projectId != null && summary != null,
   });
 
-  if (!projectId || !summary) {
+  if (!project || !summary) {
     return <p>Loading dashboard...</p>;
   }
+  const projectSlug = project.slug;
 
   const activeMetrics = METRIC_LABELS.filter((m) => summary.week_counts[m.key] > 0);
   const weekdays = Array.from({ length: 5 }, (_, i) => addDays(parseISODate(summary.week_start), i));
@@ -76,7 +91,7 @@ export function Dashboard() {
       {activeMetrics.length > 0 ? (
         <div className="dashboard-metrics">
           {activeMetrics.map((m) => (
-            <Link key={m.key} to={m.href(summary)} className="dashboard-metric">
+            <Link key={m.key} to={m.href(summary, projectSlug)} className="dashboard-metric">
               <span className="dashboard-metric__count">{summary.week_counts[m.key]}</span>
               <span className="dashboard-metric__label">{m.label}</span>
             </Link>
@@ -116,7 +131,7 @@ export function Dashboard() {
                     key={item.id}
                     className="dashboard-list__clickable"
                     onClick={() =>
-                      navigate(`/admin/activities?q=${encodeURIComponent(item.title)}`)
+                      navigate(`/${projectSlug}/admin/activities?q=${encodeURIComponent(item.title)}`)
                     }
                   >
                     <span className="dashboard-list__title">{item.title}</span>

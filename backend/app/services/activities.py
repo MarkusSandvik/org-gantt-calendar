@@ -26,6 +26,7 @@ from app.schemas.activity import (
 )
 from app.services import audit_log as audit_log_service
 from app.services import comments as comment_service
+from app.services.projects import ensure_project_editable
 
 AUDITED_ACTIVITY_FIELDS = (
     "title",
@@ -203,6 +204,7 @@ def get_activity(db: Session, activity_id: int) -> ActivityRead:
 def create_activity(
     db: Session, payload: ActivityCreate, created_by_id: int
 ) -> ActivityRead:
+    ensure_project_editable(db, payload.project_id)
     _validate_dates(payload.start_date, payload.end_date)
     _validate_team_scope(payload.all_teams, payload.owner_team_id)
     if payload.owner_team_id is not None:
@@ -241,6 +243,7 @@ def update_activity(
     activity = db.get(Activity, activity_id)
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
+    ensure_project_editable(db, activity.project_id)
 
     data = payload.model_dump(exclude_unset=True)
     reason = data.pop("reason", None)
@@ -312,6 +315,7 @@ def delete_activity(db: Session, activity_id: int) -> None:
     activity = db.get(Activity, activity_id)
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
+    ensure_project_editable(db, activity.project_id)
 
     blocking = db.scalars(
         select(Dependency).where(
