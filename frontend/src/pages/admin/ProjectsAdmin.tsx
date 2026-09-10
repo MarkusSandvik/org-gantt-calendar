@@ -42,6 +42,15 @@ function formatDate(iso: string | null): string {
   return iso ?? "—";
 }
 
+// Archiving unconditionally clears is_default with nothing to pick a
+// replacement, so the backend rejects archiving the current default —
+// mirror that here rather than offering a button that would just 422.
+function actionsFor(project: Project): { status: ProjectStatus; label: string }[] {
+  const actions = NEXT_STATUS_ACTIONS[project.status];
+  if (!project.is_default) return actions;
+  return actions.filter((a) => a.status !== "archived");
+}
+
 // Mirrors the backend's own editable-statuses rule (services/projects.py::
 // ensure_project_editable) — a completed/archived project's own record is
 // frozen too, so there's no point offering an Edit button that would 422.
@@ -158,7 +167,7 @@ export function ProjectsAdmin() {
                       Copy Members
                     </button>
                   )}
-                  {NEXT_STATUS_ACTIONS[project.status].map((action) => (
+                  {actionsFor(project).map((action) => (
                     <button
                       key={action.status}
                       type="button"

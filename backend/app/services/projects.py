@@ -186,6 +186,20 @@ def set_project_status(db: Session, project_id: int, new_status: ProjectStatus) 
             detail=f"Cannot move a project from {project.status.value} to {new_status.value}.",
         )
 
+    if new_status == ProjectStatus.ARCHIVED and project.is_default:
+        # Archiving unconditionally clears is_default, and nothing else
+        # picks a replacement — silently leaving the org with no current
+        # project at all would mean "/" falls back to an arbitrary one
+        # (whichever was created most recently) with no admin ever having
+        # chosen that. Require an explicit hand-off first instead.
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"'{project.name}' is the current default project — activate another "
+                "project first so the org always has one, then archive this one."
+            ),
+        )
+
     if new_status == ProjectStatus.ACTIVE:
         # Exactly one project is "the" default (what "/" lands everyone on)
         # at a time — activating this one demotes whichever project held

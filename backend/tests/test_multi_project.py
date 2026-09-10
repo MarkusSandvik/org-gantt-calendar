@@ -216,6 +216,41 @@ def test_invalid_status_transition_rejected(
     assert response.status_code == 422
 
 
+def test_archiving_the_default_project_is_rejected(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    """Archiving the current default would leave the org with none at all
+    (nothing else picks a replacement), so it must be blocked until an
+    Admin explicitly hands the default off to another project first."""
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "archived"}
+    )
+    assert response.status_code == 422
+    assert "default project" in response.json()["detail"]
+
+    still_default = client.get(f"/api/v1/projects/{seed_basics['project_id']}").json()
+    assert still_default["status"] == "active"
+    assert still_default["is_default"] is True
+
+
+def test_archiving_the_default_project_succeeds_after_handoff(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    new_project = make_second_project(client)
+    client.patch(f"/api/v1/projects/{new_project['id']}/status", json={"status": "active"})
+
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "archived"}
+    )
+    assert response.status_code == 200, response.text
+    archived = response.json()
+    assert archived["status"] == "archived"
+    assert archived["is_default"] is False
+
+    all_projects = client.get("/api/v1/projects").json()
+    assert sum(1 for p in all_projects if p["is_default"]) == 1
+
+
 def test_admin_can_edit_project_name_and_dates(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:
@@ -455,6 +490,10 @@ def test_archived_project_rejects_activity_update_and_delete(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:
     activity = make_activity(client, seed_basics["project_id"], "Will be locked")
+    # Hand off the default first — archiving the current default is rejected
+    # (test_archiving_the_default_project_is_rejected covers that directly).
+    other = make_second_project(client)
+    client.patch(f"/api/v1/projects/{other['id']}/status", json={"status": "active"})
     client.patch(
         f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "completed"}
     )
@@ -529,17 +568,18 @@ def test_promoting_lead_in_new_project_does_not_demote_archived_project_lead(
         json={"team_id": seed_basics["team_id"], "team_role": "lead"},
     )
 
-    # Archive that project — its Lead record is now history.
-    client.patch(
-        f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "archived"}
-    )
-
-    # Create a new project/team and make Alice Lead there too.
+    # Create the new project/team, hand off the default to it (required
+    # before the seed project can be archived), then archive the seed
+    # project — its Lead record is now history.
     new_project = make_second_project(client)
     new_team = client.post(
         "/api/v1/teams",
         json={"project_id": new_project["id"], "name": "Embedded", "category": "hardware"},
     ).json()
+    client.patch(f"/api/v1/projects/{new_project['id']}/status", json={"status": "active"})
+    client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "archived"}
+    )
     client.put(
         f"/api/v1/users/{seed_basics['user_id']}/team-memberships",
         json={"team_id": new_team["id"], "team_role": "lead"},
