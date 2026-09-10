@@ -2115,10 +2115,23 @@ button.project-selector__item:hover {
  * setting both halves of a pair explicitly. Forcing only some tokens
  * leaves those combinations mismatched — e.g. dark-mode's near-black
  * --color-track-empty paired with this block's forced-black --color-text
- * produced illegible black-on-charcoal Gantt bars during testing. */
+ * produced illegible black-on-charcoal Gantt bars during testing.
+ *
+ * print-color-adjust defaults to "economy", under which Chrome drops
+ * background colors/gradients entirely to save ink unless the user
+ * manually ticks "Background graphics" in the print dialog. Confirmed via
+ * computed style that this was silently eating the milestone diamonds
+ * (color is their *only* visual content — no border) and every Gantt bar
+ * status color except not_started (the only variant with a border to fall
+ * back on) — in_progress/completed/delayed/blocked all printed as
+ * identical blank boxes. print-color-adjust is inherited, so forcing it
+ * once here covers those plus every other color-only status indicator
+ * (badges, priority dots, event chips) without needing a rule per class. */
 @media print {
   :root {
     color-scheme: light !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
     --color-bg: #ffffff !important;
     --color-surface: #ffffff !important;
     --color-surface-subtle: #f5f6f8 !important;
