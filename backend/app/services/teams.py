@@ -29,6 +29,7 @@ def _serialize(db: Session, team: Team) -> TeamWithMembersRead:
         category=team.category,
         color=team.color,
         sort_order=team.sort_order,
+        auto_transfer_membership=team.auto_transfer_membership,
         members=members,
     )
 
@@ -59,6 +60,7 @@ def create_team(db: Session, payload: TeamCreate) -> TeamWithMembersRead:
         category=payload.category,
         color=payload.color,
         sort_order=next_sort_order,
+        auto_transfer_membership=payload.auto_transfer_membership,
     )
     db.add(team)
     db.commit()

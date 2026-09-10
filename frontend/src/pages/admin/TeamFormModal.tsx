@@ -29,6 +29,9 @@ export function TeamFormModal({
   const [name, setName] = useState(team?.name ?? "");
   const [category, setCategory] = useState<TeamCategory>(team?.category ?? "hardware");
   const [color, setColor] = useState(team?.color ?? "#8a93a1");
+  const [autoTransferMembership, setAutoTransferMembership] = useState(
+    team?.auto_transfer_membership ?? false,
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -38,9 +41,15 @@ export function TeamFormModal({
           onSubmit={(e) => {
             e.preventDefault();
             if (team) {
-              onSubmit({ name, category, color });
+              onSubmit({ name, category, color, auto_transfer_membership: autoTransferMembership });
             } else {
-              onSubmit({ project_id: projectId, name, category, color });
+              onSubmit({
+                project_id: projectId,
+                name,
+                category,
+                color,
+                auto_transfer_membership: autoTransferMembership,
+              });
             }
           }}
         >
@@ -69,6 +78,15 @@ export function TeamFormModal({
           <label>
             Color
             <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={autoTransferMembership}
+              onChange={(e) => setAutoTransferMembership(e.target.checked)}
+            />
+            Members always carry over to a new project (for shared, role-based accounts like
+            Board or Admin)
           </label>
 
           {errorMessage && <p className="form-error">{errorMessage}</p>}

@@ -1,44 +1,58 @@
 import { useState } from "react";
-import type { Project, ProjectCreatePayload } from "../../api/types";
+import type { Project, ProjectCreatePayload, ProjectUpdatePayload } from "../../api/types";
 import { projectLabel } from "../../components/ProjectStatusBadge";
 
 interface ProjectFormModalProps {
+  project: Project | null;
   existingProjects: Project[];
-  onSubmit: (payload: ProjectCreatePayload) => void;
+  onSubmit: (payload: ProjectCreatePayload | ProjectUpdatePayload) => void;
   onClose: () => void;
   submitting: boolean;
   errorMessage: string | null;
 }
 
 export function ProjectFormModal({
+  project,
   existingProjects,
   onSubmit,
   onClose,
   submitting,
   errorMessage,
 }: ProjectFormModalProps) {
-  const [name, setName] = useState("");
-  const [seasonLabel, setSeasonLabel] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [name, setName] = useState(project?.name ?? "");
+  const [seasonLabel, setSeasonLabel] = useState(project?.season_label ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
+  const [startDate, setStartDate] = useState(project?.start_date ?? "");
+  const [endDate, setEndDate] = useState(project?.end_date ?? "");
   const [copyFromId, setCopyFromId] = useState("");
+
+  const copyableProjects = existingProjects.filter((p) => p.id !== project?.id);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>New Project</h2>
+        <h2>{project ? "Edit Project" : "New Project"}</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit({
-              name,
-              season_label: seasonLabel || undefined,
-              description: description || null,
-              start_date: startDate || null,
-              end_date: endDate || null,
-              copy_structure_from_project_id: copyFromId ? Number(copyFromId) : null,
-            });
+            if (project) {
+              onSubmit({
+                name,
+                season_label: seasonLabel || null,
+                description: description || null,
+                start_date: startDate || null,
+                end_date: endDate || null,
+              });
+            } else {
+              onSubmit({
+                name,
+                season_label: seasonLabel || undefined,
+                description: description || null,
+                start_date: startDate || null,
+                end_date: endDate || null,
+                copy_structure_from_project_id: copyFromId ? Number(copyFromId) : null,
+              });
+            }
           }}
         >
           <label>
@@ -76,12 +90,12 @@ export function ProjectFormModal({
             End date
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </label>
-          {existingProjects.length > 0 && (
+          {!project && copyableProjects.length > 0 && (
             <label>
               Copy teams &amp; tags from
               <select value={copyFromId} onChange={(e) => setCopyFromId(e.target.value)}>
                 <option value="">Start empty</option>
-                {existingProjects.map((p) => (
+                {copyableProjects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {projectLabel(p)}
                   </option>
@@ -89,11 +103,13 @@ export function ProjectFormModal({
               </select>
             </label>
           )}
-          <p className="page__phase-note">
-            The new project starts in Draft. Activities, milestones, events, dependencies,
-            baselines, and team memberships never carry over — only team and tag structure does,
-            and only if you pick a project to copy from.
-          </p>
+          {!project && (
+            <p className="page__phase-note">
+              The new project starts in Draft. Activities, milestones, events, dependencies,
+              baselines, and team memberships never carry over — only team and tag structure
+              does, and only if you pick a project to copy from.
+            </p>
+          )}
 
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 
@@ -103,7 +119,7 @@ export function ProjectFormModal({
               Cancel
             </button>
             <button type="submit" className="button button--primary" disabled={submitting}>
-              Create project
+              {project ? "Save changes" : "Create project"}
             </button>
           </div>
         </form>

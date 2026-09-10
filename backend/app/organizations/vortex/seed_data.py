@@ -123,7 +123,13 @@ def seed(db: Session) -> None:
 
     teams = {}
     for i, (name, category) in enumerate(TEAM_DEFS):
-        team = Team(project_id=project.id, name=name, category=category, sort_order=i)
+        team = Team(
+            project_id=project.id,
+            name=name,
+            category=category,
+            sort_order=i,
+            auto_transfer_membership=name in ("Board", "Admin"),
+        )
         db.add(team)
         teams[name] = team
     db.flush()

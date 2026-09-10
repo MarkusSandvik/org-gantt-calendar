@@ -19,6 +19,7 @@ class TeamRead(BaseModel):
     category: TeamCategory
     color: str | None
     sort_order: int
+    auto_transfer_membership: bool
 
 
 class TeamWithMembersRead(TeamRead):
@@ -30,9 +31,11 @@ class TeamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     category: TeamCategory
     color: str | None = None
+    auto_transfer_membership: bool = False
 
 
 class TeamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     category: TeamCategory | None = None
     color: str | None = None
+    auto_transfer_membership: bool | None = None

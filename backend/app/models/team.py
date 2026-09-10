@@ -1,6 +1,6 @@
 import datetime as dt
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -16,6 +16,12 @@ class Team(TimestampMixin, Base):
     category: Mapped[TeamCategory] = mapped_column(Enum(TeamCategory))
     color: Mapped[str | None] = mapped_column(String(20))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    # Teams like Board/Admin hold shared, role-based accounts (whoever is
+    # Treasurer this year "is" that membership) rather than personally
+    # recruited rosters — so unlike every other team, their membership
+    # always carries over automatically when copying a project's structure
+    # into a new one, with no per-member choice involved.
+    auto_transfer_membership: Mapped[bool] = mapped_column(Boolean, default=False)
     archived_at: Mapped[dt.datetime | None] = mapped_column(default=None)
 
     project: Mapped["Project"] = relationship(back_populates="teams")  # noqa: F821

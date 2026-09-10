@@ -23,6 +23,11 @@ export function ProjectSelector() {
   const others = projects
     .filter((p) => p.id !== project.id)
     .sort((a, b) => b.id - a.id);
+  // A non-default project can still be genuinely active (e.g. mid
+  // leadership handover, with two seasons running in parallel), not just
+  // past history — split the list so the label stays accurate.
+  const otherActive = others.filter((p) => p.status === "draft" || p.status === "active");
+  const otherHistory = others.filter((p) => p.status === "completed" || p.status === "archived");
 
   return (
     <div className="project-selector">
@@ -46,10 +51,30 @@ export function ProjectSelector() {
               <ProjectStatusBadge status={project.status} />
             </div>
 
-            {others.length > 0 && (
+            {otherActive.length > 0 && (
+              <>
+                <div className="project-selector__group-label">Other Active</div>
+                {otherActive.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="project-selector__item"
+                    onClick={() => {
+                      goToProject(p);
+                      setOpen(false);
+                    }}
+                  >
+                    <span>{projectLabel(p)}</span>
+                    <ProjectStatusBadge status={p.status} />
+                  </button>
+                ))}
+              </>
+            )}
+
+            {otherHistory.length > 0 && (
               <>
                 <div className="project-selector__group-label">History</div>
-                {others.map((p) => (
+                {otherHistory.map((p) => (
                   <button
                     key={p.id}
                     type="button"

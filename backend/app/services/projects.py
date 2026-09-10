@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from app.models.enums import ProjectStatus
 from app.models.project import Project
 from app.models.tag import Tag
-from app.models.team import Team
-from app.schemas.project import ProjectCreate
+from app.models.team import Team, TeamMembership
+from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 def _slugify(value: str) -> str:
@@ -75,22 +75,40 @@ def ensure_project_editable(db: Session, project_id: int) -> None:
 def _copy_structure(db: Session, source_project_id: int, target_project_id: int) -> None:
     """Duplicates a project's Teams and Tags (structure only) into a new
     project. Deliberately excludes activities, milestones, calendar events,
-    dependencies, baselines, and team memberships — a new season starts with
-    an empty schedule and a re-recruited roster, not last season's dates and
-    people (Section 11 of the design doc)."""
+    dependencies, and baselines — a new season starts with an empty
+    schedule, not last season's dates. Team memberships are excluded too,
+    *except* for a team flagged `auto_transfer_membership` (Board/Admin,
+    typically): those hold shared, role-based accounts rather than a
+    personally recruited roster, so their membership always carries over.
+    Every other team's roster is a deliberate choice made afterward, one
+    member at a time, via the ordinary team-membership endpoint — this
+    function never guesses at it."""
     source_teams = db.scalars(
         select(Team).where(Team.project_id == source_project_id, Team.archived_at.is_(None))
     ).all()
     for team in source_teams:
-        db.add(
-            Team(
-                project_id=target_project_id,
-                name=team.name,
-                category=team.category,
-                color=team.color,
-                sort_order=team.sort_order,
-            )
+        new_team = Team(
+            project_id=target_project_id,
+            name=team.name,
+            category=team.category,
+            color=team.color,
+            sort_order=team.sort_order,
+            auto_transfer_membership=team.auto_transfer_membership,
         )
+        db.add(new_team)
+        if team.auto_transfer_membership:
+            db.flush()  # assigns new_team.id
+            memberships = db.scalars(
+                select(TeamMembership).where(TeamMembership.team_id == team.id)
+            ).all()
+            for membership in memberships:
+                db.add(
+                    TeamMembership(
+                        team_id=new_team.id,
+                        user_id=membership.user_id,
+                        team_role=membership.team_role,
+                    )
+                )
 
     source_tags = db.scalars(
         select(Tag).where(Tag.project_id == source_project_id, Tag.archived_at.is_(None))
@@ -127,6 +145,21 @@ def create_project(db: Session, payload: ProjectCreate, created_by_id: int) -> P
     return project
 
 
+def update_project(db: Session, project_id: int, payload: ProjectUpdate) -> Project:
+    """Edits a project's own name/season/description/dates. Gated by the
+    same read-only rule as everything else it contains — a completed or
+    archived project's own record is frozen too, not just its activities
+    and milestones."""
+    project = get_project(db, project_id)
+    ensure_project_editable(db, project_id)
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(project, field, value)
+    db.commit()
+    db.refresh(project)
+    return project
+
+
 # A project starts in DRAFT while an Admin configures it, becomes ACTIVE for
 # day-to-day work, is marked COMPLETED when the season ends, and ARCHIVED
 # once it's pure history. ARCHIVED is deliberately a dead end here — nothing
@@ -154,15 +187,19 @@ def set_project_status(db: Session, project_id: int, new_status: ProjectStatus) 
         )
 
     if new_status == ProjectStatus.ACTIVE:
-        # Exactly one project is "the" default at a time. Activating this
-        # one demotes whichever project held that spot before.
+        # Exactly one project is "the" default (what "/" lands everyone on)
+        # at a time — activating this one demotes whichever project held
+        # that spot before. It deliberately does NOT complete that project:
+        # a leadership handover often means two seasons are genuinely
+        # active in parallel for a while (next season's Board is elected
+        # and its teams staffed before this season's work is finished), so
+        # completing the outgoing project stays a separate, explicit action
+        # an Admin takes only once that handover is actually done.
         previous_default = db.scalars(
             select(Project).where(Project.is_default.is_(True), Project.id != project.id)
         ).first()
         if previous_default is not None:
             previous_default.is_default = False
-            if previous_default.status == ProjectStatus.ACTIVE:
-                previous_default.status = ProjectStatus.COMPLETED
         project.is_default = True
 
     project.status = new_status

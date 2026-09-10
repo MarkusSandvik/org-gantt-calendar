@@ -1,10 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type { Project, ProjectCreatePayload, ProjectStatus } from "../../api/types";
+import type {
+  Project,
+  ProjectCreatePayload,
+  ProjectStatus,
+  ProjectUpdatePayload,
+} from "../../api/types";
 import { ProjectStatusBadge, projectLabel } from "../../components/ProjectStatusBadge";
 import { useToast } from "../../components/Toast";
 import { usePermissions } from "../../hooks/usePermissions";
+import { CopyMembersModal } from "./CopyMembersModal";
 import { ProjectFormModal } from "./ProjectFormModal";
 
 const NEXT_STATUS_ACTIONS: Record<ProjectStatus, { status: ProjectStatus; label: string }[]> = {
@@ -25,7 +31,7 @@ const NEXT_STATUS_ACTIONS: Record<ProjectStatus, { status: ProjectStatus; label:
 
 const CONFIRM_MESSAGES: Record<ProjectStatus, (project: Project) => string> = {
   active: (p) =>
-    `Activate "${projectLabel(p)}"? It becomes the default project everyone lands on, and the current active project (if any) is marked Completed.`,
+    `Activate "${projectLabel(p)}"? It becomes the default project everyone lands on. Any other active project stays active and editable — mark it Completed separately once its work is actually done.`,
   completed: (p) => `Mark "${projectLabel(p)}" as Completed?`,
   archived: (p) =>
     `Archive "${projectLabel(p)}"? This is permanent — an archived project can never be reactivated, and becomes fully read-only.`,
@@ -35,6 +41,11 @@ const CONFIRM_MESSAGES: Record<ProjectStatus, (project: Project) => string> = {
 function formatDate(iso: string | null): string {
   return iso ?? "—";
 }
+
+// Mirrors the backend's own editable-statuses rule (services/projects.py::
+// ensure_project_editable) — a completed/archived project's own record is
+// frozen too, so there's no point offering an Edit button that would 422.
+const EDITABLE_STATUSES: ProjectStatus[] = ["draft", "active"];
 
 export function ProjectsAdmin() {
   const queryClient = useQueryClient();
@@ -46,16 +57,32 @@ export function ProjectsAdmin() {
     queryFn: () => api.get<Project[]>("/projects"),
   });
 
-  const [showForm, setShowForm] = useState(false);
+  const [modalProject, setModalProject] = useState<Project | null | undefined>(undefined);
+  const [copyMembersProject, setCopyMembersProject] = useState<Project | undefined>(undefined);
   const [formError, setFormError] = useState<string | null>(null);
+
+  function closeModal() {
+    setModalProject(undefined);
+    setFormError(null);
+  }
 
   const createMutation = useMutation({
     mutationFn: (payload: ProjectCreatePayload) => api.post<Project>("/projects", payload),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setShowForm(false);
-      setFormError(null);
+      closeModal();
       showToast(`"${projectLabel(created)}" created`);
+    },
+    onError: (err: ApiError) => setFormError(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ProjectUpdatePayload }) =>
+      api.patch<Project>(`/projects/${id}`, payload),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      closeModal();
+      showToast(`"${projectLabel(updated)}" updated`);
     },
     onError: (err: ApiError) => setFormError(err.message),
   });
@@ -84,7 +111,7 @@ export function ProjectsAdmin() {
           create projects or change their status.
         </p>
         {isAdmin && (
-          <button className="button button--primary" onClick={() => setShowForm(true)}>
+          <button className="button button--primary" onClick={() => setModalProject(null)}>
             New Project
           </button>
         )}
@@ -113,6 +140,24 @@ export function ProjectsAdmin() {
               <td>{formatDate(project.end_date)}</td>
               {isAdmin && (
                 <td className="data-table__actions">
+                  {EDITABLE_STATUSES.includes(project.status) && (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => setModalProject(project)}
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {EDITABLE_STATUSES.includes(project.status) && sorted.length > 1 && (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => setCopyMembersProject(project)}
+                    >
+                      Copy Members
+                    </button>
+                  )}
                   {NEXT_STATUS_ACTIONS[project.status].map((action) => (
                     <button
                       key={action.status}
@@ -136,19 +181,29 @@ export function ProjectsAdmin() {
         </tbody>
       </table>
 
-      {showForm && (
+      {modalProject !== undefined && (
         <ProjectFormModal
+          project={modalProject}
           existingProjects={sorted}
-          submitting={createMutation.isPending}
+          submitting={createMutation.isPending || updateMutation.isPending}
           errorMessage={formError}
-          onClose={() => {
-            setShowForm(false);
-            setFormError(null);
-          }}
+          onClose={closeModal}
           onSubmit={(payload) => {
             setFormError(null);
-            createMutation.mutate(payload);
+            if (modalProject) {
+              updateMutation.mutate({ id: modalProject.id, payload: payload as ProjectUpdatePayload });
+            } else {
+              createMutation.mutate(payload as ProjectCreatePayload);
+            }
           }}
+        />
+      )}
+
+      {copyMembersProject && (
+        <CopyMembersModal
+          targetProject={copyMembersProject}
+          sourceCandidates={sorted.filter((p) => p.id !== copyMembersProject.id)}
+          onClose={() => setCopyMembersProject(undefined)}
         />
       )}
     </div>

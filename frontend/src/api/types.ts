@@ -25,6 +25,14 @@ export interface ProjectCreatePayload {
   copy_structure_from_project_id?: number | null;
 }
 
+export interface ProjectUpdatePayload {
+  name?: string;
+  season_label?: string | null;
+  description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
 export type TeamCategory = "hardware" | "software" | "organization";
 
 export interface TeamMember {
@@ -41,6 +49,7 @@ export interface Team {
   category: TeamCategory;
   color: string | null;
   sort_order: number;
+  auto_transfer_membership: boolean;
   members: TeamMember[];
 }
 
@@ -49,12 +58,14 @@ export interface TeamCreatePayload {
   name: string;
   category: TeamCategory;
   color: string | null;
+  auto_transfer_membership?: boolean;
 }
 
 export interface TeamUpdatePayload {
   name?: string;
   category?: TeamCategory;
   color?: string | null;
+  auto_transfer_membership?: boolean;
 }
 
 export type GlobalRole = "user" | "admin";

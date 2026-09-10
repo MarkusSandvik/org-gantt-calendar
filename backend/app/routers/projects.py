@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.project import Project
 from app.models.user import User
-from app.schemas.project import ProjectCreate, ProjectRead, ProjectStatusUpdate
+from app.schemas.project import ProjectCreate, ProjectRead, ProjectStatusUpdate, ProjectUpdate
 from app.services import projects as project_service
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -36,6 +36,17 @@ def create_project(
 ) -> Project:
     permissions.require(permissions.can_manage_project(current_user))
     return project_service.create_project(db, payload, created_by_id=current_user.id)
+
+
+@router.patch("/{project_id}", response_model=ProjectRead)
+def update_project(
+    project_id: int,
+    payload: ProjectUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Project:
+    permissions.require(permissions.can_manage_project(current_user))
+    return project_service.update_project(db, project_id, payload)
 
 
 @router.patch("/{project_id}/status", response_model=ProjectRead)

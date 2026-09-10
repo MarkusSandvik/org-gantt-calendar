@@ -105,6 +105,52 @@ def test_copy_structure_duplicates_teams_and_tags_only(
     assert new_activities == []  # no schedule data copied
 
 
+def test_copy_structure_transfers_auto_transfer_team_memberships(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    """Board/Admin hold shared, role-based accounts — their membership
+    always carries over on copy. Every other team's roster is a choice
+    made afterward, never guessed at by the copy itself."""
+    board = client.post(
+        "/api/v1/teams",
+        json={
+            "project_id": seed_basics["project_id"],
+            "name": "Board",
+            "category": "organization",
+            "auto_transfer_membership": True,
+        },
+    ).json()
+    client.put(
+        f"/api/v1/users/{seed_basics['user_id']}/team-memberships",
+        json={"team_id": board["id"], "team_role": "lead"},
+    )
+
+    response = client.post(
+        "/api/v1/projects",
+        json={
+            "name": "Team 28",
+            "slug": "team-28",
+            "copy_structure_from_project_id": seed_basics["project_id"],
+        },
+    )
+    assert response.status_code == 201, response.text
+    new_project = response.json()
+
+    new_teams = {
+        t["name"]: t
+        for t in client.get(
+            "/api/v1/teams", params={"project_id": new_project["id"]}
+        ).json()
+    }
+    assert new_teams["Board"]["auto_transfer_membership"] is True
+    assert [m["id"] for m in new_teams["Board"]["members"]] == [seed_basics["user_id"]]
+    assert new_teams["Board"]["members"][0]["team_role"] == "lead"
+    # Mechanical is a normal team — its (empty here) roster is never
+    # auto-copied regardless of the Board transfer above.
+    assert new_teams["Mechanical"]["auto_transfer_membership"] is False
+    assert new_teams["Mechanical"]["members"] == []
+
+
 def test_copy_structure_from_missing_project_404s(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:
@@ -115,9 +161,14 @@ def test_copy_structure_from_missing_project_404s(
     assert response.status_code == 404
 
 
-def test_activating_project_completes_previous_default(
+def test_activating_project_transfers_default_without_completing_previous(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:
+    """A leadership handover often runs two seasons in parallel for a
+    while — next season's Board is elected and its teams staffed before
+    this season's work wraps up. Activating a new project must only
+    transfer is_default, never force-complete the outgoing one; that stays
+    a separate, explicit action."""
     project = make_second_project(client)
 
     response = client.patch(
@@ -129,8 +180,24 @@ def test_activating_project_completes_previous_default(
     assert activated["is_default"] is True
 
     original = client.get(f"/api/v1/projects/{seed_basics['project_id']}").json()
-    assert original["status"] == "completed"
-    assert original["is_default"] is False
+    assert original["status"] == "active"  # still active, not force-completed
+    assert original["is_default"] is False  # but no longer the default
+
+
+def test_two_active_projects_are_both_independently_editable(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    new_project = make_second_project(client)
+    client.patch(f"/api/v1/projects/{new_project['id']}/status", json={"status": "active"})
+
+    # The outgoing project (no longer default, but still ACTIVE) still
+    # accepts writes — a handover doesn't freeze it.
+    old_activity = make_activity(client, seed_basics["project_id"], "Wrap-up task")
+    assert "id" in old_activity
+
+    # The newly active project accepts writes too.
+    new_activity = make_activity(client, new_project["id"], "Kickoff task")
+    assert "id" in new_activity
 
 
 def test_invalid_status_transition_rejected(
@@ -147,6 +214,69 @@ def test_invalid_status_transition_rejected(
         f"/api/v1/projects/{project['id']}/status", json={"status": "active"}
     )
     assert response.status_code == 422
+
+
+def test_admin_can_edit_project_name_and_dates(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}",
+        json={
+            "name": "AUV 2027",
+            "season_label": "2026/27",
+            "start_date": "2026-09-01",
+            "end_date": "2027-07-01",
+        },
+    )
+    assert response.status_code == 200, response.text
+    updated = response.json()
+    assert updated["name"] == "AUV 2027"
+    assert updated["season_label"] == "2026/27"
+    assert updated["start_date"] == "2026-09-01"
+    assert updated["end_date"] == "2027-07-01"
+    assert updated["slug"] == "test-project"  # slug never changes
+
+
+def test_editing_project_is_a_partial_update(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    original = client.get(f"/api/v1/projects/{seed_basics['project_id']}").json()
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}", json={"name": "Renamed Only"}
+    )
+    assert response.status_code == 200, response.text
+    updated = response.json()
+    assert updated["name"] == "Renamed Only"
+    assert updated["season_label"] == original["season_label"]
+    assert updated["description"] == original["description"]
+
+
+def test_completed_project_rejects_edit(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}/status", json={"status": "completed"}
+    )
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}", json={"name": "Too late"}
+    )
+    assert response.status_code == 422
+    assert "read-only" in response.json()["detail"]
+
+
+def test_non_admin_cannot_edit_project(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post("/api/v1/auth/logout")
+    client.post(
+        "/api/v1/auth/login", json={"email": "bob@example.org", "password": SEED_USER_PASSWORD}
+    )
+    client.headers["X-CSRF-Token"] = client.cookies.get("csrf", "")
+
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}", json={"name": "Sneaky rename"}
+    )
+    assert response.status_code == 403
 
 
 # ---------------------------------------------------------------------------

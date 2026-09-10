@@ -35,5 +35,17 @@ class ProjectCreate(BaseModel):
     copy_structure_from_project_id: int | None = None
 
 
+class ProjectUpdate(BaseModel):
+    # Deliberately no `slug` field — the slug is baked into every bookmarked
+    # /:projectSlug/... URL, so changing it after creation would break links
+    # rather than just relabeling the project. Rename the project's display
+    # name instead.
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    season_label: str | None = Field(default=None, max_length=50)
+    description: str | None = None
+    start_date: dt.date | None = None
+    end_date: dt.date | None = None
+
+
 class ProjectStatusUpdate(BaseModel):
     status: ProjectStatus
