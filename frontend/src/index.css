@@ -681,11 +681,6 @@ button.project-selector__item:hover {
   font-weight: 600;
 }
 
-.admin-tab--disabled {
-  color: var(--color-border-subtle);
-  cursor: default;
-}
-
 /* Toolbar / filters */
 
 .toolbar {
