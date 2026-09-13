@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -8,6 +10,11 @@ import app.models  # noqa: F401  (registers all tables on Base.metadata)
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+
+# Defaults to the original in-memory SQLite; set to a real Postgres DSN
+# (e.g. in CI) to run the same suite against Postgres, per DEPLOYMENT_PLAN.md's
+# "needs verifying, not assumed" note on SQLite/Postgres parity.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
 
 
 @pytest.fixture(autouse=True)
@@ -25,10 +32,11 @@ def _reset_login_rate_limiter():
 
 @pytest.fixture()
 def db_session():
+    is_sqlite = TEST_DATABASE_URL.startswith("sqlite")
     engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False} if is_sqlite else {},
+        poolclass=StaticPool if is_sqlite else None,
     )
     TestingSessionLocal = sessionmaker(bind=engine)
     Base.metadata.create_all(engine)
@@ -48,6 +56,10 @@ def db_session():
     finally:
         session.close()
         app.dependency_overrides.clear()
+        # A real Postgres test database persists between test functions
+        # (unlike SQLite's :memory:), so it must be cleared explicitly to
+        # keep each test isolated.
+        Base.metadata.drop_all(engine)
 
 
 TEST_ADMIN_EMAIL = "test-admin@example.org"

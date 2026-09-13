@@ -13,6 +13,15 @@ Role-based access control (Admin/Lead/Member) was added after v0.1 shipped —
 see `RBAC_PLAN.md` for that architecture and `AUTHORIZATION.md` for the live
 permission matrix. The organization abstraction (this file's **Architecture**
 section) was added afterward — see `ORGANIZATION_PLAN.md` for that design.
+This is still local-first, with no production deployment yet — see
+`DEPLOYMENT_PLAN.md` for what a real deployment needs (a production
+database, HTTPS, hosting, and wiring up real invitation/password-reset
+email, which today only generates a link and stops short of sending it
+anywhere outside local dev). A few secret-free pieces of that plan already
+exist: a backend `Dockerfile`, a production-database bootstrap script
+(`python -m app.db.bootstrap_admin`, see below), and a GitHub Actions CI
+workflow that runs the backend tests (against both SQLite and Postgres)
+and the frontend build on every push.
 
 ## Stack
 
@@ -90,9 +99,12 @@ database table.
    `features`), and register it in the `PROFILES` map in
    `frontend/src/branding/index.ts`.
 3. **Deploy** with `APP_ORGANIZATION=<id>` and `VITE_ORGANIZATION=<id>` set,
-   pointing at a fresh database. Run migrations, then
+   pointing at a fresh database. Run migrations, then either
    `python -m app.db.seed` once to seed that organization's demo data (skips
-   automatically if the database already has data).
+   automatically if the database already has data), or, for a real
+   deployment that should start empty, `python -m app.db.bootstrap_admin
+   --email you@example.org --name "Your Name"` to create exactly one real
+   Admin account and nothing else (see `DEPLOYMENT_PLAN.md`).
 4. If the organization needs functionality no other deployment should get,
    add it under `backend/app/extensions/<id>/` or
    `frontend/src/extensions/<id>/`, gated by a flag in that org's `features`
