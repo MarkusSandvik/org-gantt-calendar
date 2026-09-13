@@ -9,5 +9,6 @@ export const branding: BrandingConfig = {
   logoHref: "/organizations/vortex/logo-text-light.svg",
   defaultTheme: "dark",
   websiteUrl: "https://www.vortexntnu.no/",
+  creditSuffix: "for Vortex NTNU",
   features: {},
 };

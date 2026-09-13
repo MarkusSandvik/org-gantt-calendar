@@ -109,7 +109,7 @@ export function AppShell() {
         <div className="app-nav__footer">
           <ThemeToggle />
           <p className="app-nav__credit">
-            Created by Markus Sandvik
+            Created by Markus Sandvik{branding.creditSuffix ? ` ${branding.creditSuffix}` : ""}
             <br />© {new Date().getFullYear()}
           </p>
         </div>

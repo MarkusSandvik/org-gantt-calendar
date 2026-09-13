@@ -15,5 +15,8 @@ export interface BrandingConfig {
   defaultTheme?: ThemePreference;
   /** Optional public-facing site, shown subtly on Login when present. */
   websiteUrl?: string;
+  /** Appended to the nav footer's "Created by <author>" credit, e.g.
+   * "for Vortex NTNU". Omit for orgs that don't need one. */
+  creditSuffix?: string;
   features: Record<string, boolean>;
 }
