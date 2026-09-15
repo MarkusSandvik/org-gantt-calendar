@@ -86,6 +86,14 @@ def get_dashboard_summary(db: Session, project_id: int) -> DashboardSummary:
             Activity.project_id == project_id, Activity.status == ActivityStatus.BLOCKED
         ),
     )
+    overdue_unflagged = _count(
+        db,
+        select(Activity).where(
+            Activity.project_id == project_id,
+            Activity.end_date < today,
+            Activity.status.not_in([ActivityStatus.COMPLETED, ActivityStatus.DELAYED]),
+        ),
+    )
     social_activities = _count(
         db,
         select(CalendarEvent).where(
@@ -119,6 +127,7 @@ def get_dashboard_summary(db: Session, project_id: int) -> DashboardSummary:
         milestones_this_week=milestones_this_week,
         delayed=delayed,
         blocked=blocked,
+        overdue_unflagged=overdue_unflagged,
         social_activities=social_activities,
         meetings=meetings,
         upcoming_deadlines=upcoming_deadlines,
@@ -154,6 +163,15 @@ def get_dashboard_summary(db: Session, project_id: int) -> DashboardSummary:
         .where(Activity.project_id == project_id, Activity.status == ActivityStatus.BLOCKED)
         .order_by(Activity.title)
     ).all()
+    overdue_unflagged_rows = db.scalars(
+        select(Activity)
+        .where(
+            Activity.project_id == project_id,
+            Activity.end_date < today,
+            Activity.status.not_in([ActivityStatus.COMPLETED, ActivityStatus.DELAYED]),
+        )
+        .order_by(Activity.end_date)
+    ).all()
 
     attention_required: list[AttentionItem] = []
     for activity in delayed_rows:
@@ -169,6 +187,16 @@ def get_dashboard_summary(db: Session, project_id: int) -> DashboardSummary:
                 title=activity.title,
                 status=activity.status,
                 detail=_blocked_detail(db, activity),
+            )
+        )
+    for activity in overdue_unflagged_rows:
+        days_late = (today - activity.end_date).days
+        attention_required.append(
+            AttentionItem(
+                id=activity.id,
+                title=activity.title,
+                status=activity.status,
+                detail=f"{days_late} day{'s' if days_late != 1 else ''} overdue, not marked",
             )
         )
 

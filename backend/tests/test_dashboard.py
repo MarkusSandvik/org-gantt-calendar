@@ -52,6 +52,7 @@ def test_week_counts_are_zero_when_nothing_matches(
         "milestones_this_week": 0,
         "delayed": 0,
         "blocked": 0,
+        "overdue_unflagged": 0,
         "social_activities": 0,
         "meetings": 0,
         "upcoming_deadlines": 0,
@@ -149,3 +150,73 @@ def test_attention_required_blocked_falls_back_without_dependency(
     summary = get_summary(client, seed_basics["project_id"])
     item = next(i for i in summary["attention_required"] if i["title"] == "Mystery block")
     assert item["detail"] == "Blocked"
+
+
+def test_overdue_unflagged_counts_past_due_activity_not_marked_delayed(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    make_activity(
+        client,
+        seed_basics,
+        title="Forgotten task",
+        status="in_progress",
+        start_date=str(TODAY - dt.timedelta(days=20)),
+        end_date=str(TODAY - dt.timedelta(days=3)),
+    )
+
+    summary = get_summary(client, seed_basics["project_id"])
+    assert summary["week_counts"]["overdue_unflagged"] == 1
+    item = next(i for i in summary["attention_required"] if i["title"] == "Forgotten task")
+    assert item["detail"] == "3 days overdue, not marked"
+
+
+def test_overdue_unflagged_excludes_delayed_and_completed(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    make_activity(
+        client,
+        seed_basics,
+        title="Already flagged",
+        status="delayed",
+        start_date=str(TODAY - dt.timedelta(days=20)),
+        end_date=str(TODAY - dt.timedelta(days=3)),
+    )
+    make_activity(
+        client,
+        seed_basics,
+        title="Finished late",
+        status="completed",
+        start_date=str(TODAY - dt.timedelta(days=20)),
+        end_date=str(TODAY - dt.timedelta(days=3)),
+    )
+
+    summary = get_summary(client, seed_basics["project_id"])
+    assert summary["week_counts"]["overdue_unflagged"] == 0
+    titles = [i["title"] for i in summary["attention_required"]]
+    assert "Finished late" not in titles
+
+
+def test_activity_read_is_overdue_flag(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    overdue = make_activity(
+        client,
+        seed_basics,
+        title="Overdue and unmarked",
+        status="in_progress",
+        start_date=str(TODAY - dt.timedelta(days=20)),
+        end_date=str(TODAY - dt.timedelta(days=3)),
+    )
+    delayed = make_activity(
+        client,
+        seed_basics,
+        title="Overdue but flagged",
+        status="delayed",
+        start_date=str(TODAY - dt.timedelta(days=20)),
+        end_date=str(TODAY - dt.timedelta(days=3)),
+    )
+    future = make_activity(client, seed_basics, title="Not due yet", status="in_progress")
+
+    assert overdue["is_overdue"] is True
+    assert delayed["is_overdue"] is False
+    assert future["is_overdue"] is False

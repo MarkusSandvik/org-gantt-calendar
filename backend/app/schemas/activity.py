@@ -1,6 +1,6 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.models.enums import ActivityStatus, Priority
 
@@ -80,3 +80,14 @@ class ActivityRead(BaseModel):
     tags: list[ActivityTagRead]
     created_at: dt.datetime
     updated_at: dt.datetime
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_overdue(self) -> bool:
+        """Past its end date but never marked Delayed (or Completed) —
+        status is a plain manual field with no automatic link to dates,
+        so this flags the case nothing else would otherwise surface."""
+        return self.end_date < dt.date.today() and self.status not in (
+            ActivityStatus.COMPLETED,
+            ActivityStatus.DELAYED,
+        )

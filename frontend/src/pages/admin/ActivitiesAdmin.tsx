@@ -142,6 +142,11 @@ export function ActivitiesAdmin() {
                 <td>{activity.owner_user?.name ?? "—"}</td>
                 <td>
                   <StatusBadge status={activity.status} />
+                  {activity.is_overdue && (
+                    <span className="overdue-flag" title="Past its end date, not marked Delayed">
+                      Overdue
+                    </span>
+                  )}
                 </td>
                 <td>
                   <PriorityBadge priority={activity.priority} />

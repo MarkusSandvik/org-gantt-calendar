@@ -10,6 +10,7 @@ class WeekCounts(BaseModel):
     milestones_this_week: int
     delayed: int
     blocked: int
+    overdue_unflagged: int
     social_activities: int
     meetings: int
     upcoming_deadlines: int

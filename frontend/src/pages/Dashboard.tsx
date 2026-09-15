@@ -31,6 +31,11 @@ const METRIC_LABELS: {
     href: (_s, slug) => `/${slug}/admin/activities?status=blocked`,
   },
   {
+    key: "overdue_unflagged",
+    label: "overdue, not marked",
+    href: (_s, slug) => `/${slug}/admin/activities`,
+  },
+  {
     key: "social_activities",
     label: "social activities",
     href: (s, slug) => `/${slug}/calendar/week/${s.iso_year}/${s.iso_week}`,

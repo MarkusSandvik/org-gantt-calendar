@@ -206,6 +206,7 @@ export interface Activity {
   tags: ActivityTagRef[];
   created_at: string;
   updated_at: string;
+  is_overdue: boolean;
 }
 
 export type MilestoneStatus = "not_started" | "on_track" | "at_risk" | "completed" | "missed";
@@ -340,6 +341,7 @@ export interface WeekCounts {
   milestones_this_week: number;
   delayed: number;
   blocked: number;
+  overdue_unflagged: number;
   social_activities: number;
   meetings: number;
   upcoming_deadlines: number;
