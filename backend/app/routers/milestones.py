@@ -71,7 +71,7 @@ def create_milestone(
     if payload.all_teams:
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can create a milestone that applies to all teams.",
+            "Only an Admin can create a milestone that applies to the Organization.",
         )
     return milestone_service.create_milestone(db, payload)
 
@@ -88,7 +88,7 @@ def update_milestone(
     if payload.all_teams:
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can set a milestone to apply to all teams.",
+            "Only an Admin can set a milestone to apply to the Organization.",
         )
     return milestone_service.update_milestone(
         db, milestone_id, payload, user_id=current_user.id

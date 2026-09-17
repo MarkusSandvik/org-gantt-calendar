@@ -27,7 +27,7 @@ const FIELD_LABELS: Record<string, string> = {
   progress_percent: "progress",
   priority: "priority",
   owner_team_id: "owner team",
-  all_teams: "applies to all teams",
+  all_teams: "applies to the Organization",
   owner_user_id: "owner",
   team_id: "team",
 };

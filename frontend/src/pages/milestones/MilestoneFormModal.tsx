@@ -192,7 +192,7 @@ export function MilestoneFormModal({
                 }
               >
                 <option value="">None</option>
-                {isAdmin && <option value="__all__">All teams</option>}
+                {isAdmin && <option value="__all__">Organization</option>}
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

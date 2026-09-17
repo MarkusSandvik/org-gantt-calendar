@@ -34,7 +34,7 @@ def _validate_team_scope(all_teams: bool, team_id: int | None) -> None:
     if all_teams and team_id is not None:
         raise HTTPException(
             status_code=422,
-            detail="A milestone can't have both a specific team and apply to all teams.",
+            detail="A milestone can't have both a specific team and apply to the Organization.",
         )
 
 

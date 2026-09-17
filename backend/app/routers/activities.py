@@ -75,7 +75,7 @@ def create_activity(
     if payload.all_teams:
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can create an activity that applies to all teams.",
+            "Only an Admin can create an activity that applies to the Organization.",
         )
     return activity_service.create_activity(db, payload, created_by_id=current_user.id)
 
@@ -97,7 +97,7 @@ def update_activity(
     if data.get("all_teams"):
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can set an activity to apply to all teams.",
+            "Only an Admin can set an activity to apply to the Organization.",
         )
     return activity_service.update_activity(db, activity_id, payload, user_id=current_user.id)
 

@@ -52,7 +52,7 @@ def _validate_team_scope(all_teams: bool, owner_team_id: int | None) -> None:
     if all_teams and owner_team_id is not None:
         raise HTTPException(
             status_code=422,
-            detail="An activity can't have both a specific owner team and apply to all teams.",
+            detail="An activity can't have both a specific owner team and apply to the Organization.",
         )
 
 
