@@ -1,4 +1,5 @@
 import type { ActivityFilterState } from "../../hooks/useActivityFilters";
+import { ORGANIZATION_TEAM_FILTER } from "../../hooks/useCalendarFilters";
 import type { ActivityStatus, Priority, Tag, Team, User } from "../../api/types";
 
 const STATUS_OPTIONS: ActivityStatus[] = [
@@ -40,6 +41,7 @@ export function FilterBar({
       />
       <select value={filters.teamId} onChange={(e) => onChange({ teamId: e.target.value })}>
         <option value="">All teams</option>
+        <option value={ORGANIZATION_TEAM_FILTER}>Organization</option>
         {teams.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}

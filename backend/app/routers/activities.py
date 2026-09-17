@@ -28,6 +28,7 @@ def _get_activity_or_404(db: Session, activity_id: int) -> Activity:
 def list_activities(
     project_id: int,
     team_id: int | None = None,
+    all_teams_only: bool = False,
     owner_user_id: int | None = None,
     contributor_user_id: int | None = None,
     tag_id: int | None = None,
@@ -43,6 +44,7 @@ def list_activities(
         db,
         project_id=project_id,
         team_id=team_id,
+        all_teams_only=all_teams_only,
         owner_user_id=owner_user_id,
         contributor_user_id=contributor_user_id,
         tag_id=tag_id,

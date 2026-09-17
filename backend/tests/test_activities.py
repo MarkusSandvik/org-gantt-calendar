@@ -171,6 +171,22 @@ def test_list_activity_filter_by_tag(client: TestClient, seed_basics: dict[str, 
     assert [a["id"] for a in result] == [tagged["id"]]
 
 
+def test_list_activities_all_teams_only(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    client.post(
+        "/api/v1/activities",
+        json=make_payload(seed_basics, title="Org-wide", owner_team_id=None, all_teams=True),
+    )
+    client.post("/api/v1/activities", json=make_payload(seed_basics, title="Team-only"))
+
+    result = client.get(
+        "/api/v1/activities",
+        params={"project_id": seed_basics["project_id"], "all_teams_only": True},
+    ).json()
+    assert [a["title"] for a in result] == ["Org-wide"]
+
+
 def test_list_activity_filter_by_contributor(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:

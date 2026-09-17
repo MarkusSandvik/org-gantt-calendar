@@ -146,6 +146,7 @@ def list_activities(
     db: Session,
     project_id: int | None = None,
     team_id: int | None = None,
+    all_teams_only: bool = False,
     owner_user_id: int | None = None,
     contributor_user_id: int | None = None,
     tag_id: int | None = None,
@@ -158,7 +159,9 @@ def list_activities(
     stmt = select(Activity)
     if project_id is not None:
         stmt = stmt.where(Activity.project_id == project_id)
-    if team_id is not None:
+    if all_teams_only:
+        stmt = stmt.where(Activity.all_teams.is_(True))
+    elif team_id is not None:
         stmt = stmt.where(Activity.owner_team_id == team_id)
     if owner_user_id is not None:
         stmt = stmt.where(Activity.owner_user_id == owner_user_id)

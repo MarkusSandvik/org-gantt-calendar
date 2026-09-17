@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ORGANIZATION_TEAM_FILTER } from "./useCalendarFilters";
 
 export interface ActivityFilterState {
   q: string;
@@ -96,7 +97,15 @@ export function useActivityFilters(defaults?: Partial<ActivityFilterState>) {
       string,
     ][]) {
       const value = filters[key];
-      if (value) params.set(paramKey, value);
+      if (!value) continue;
+      // "Organization" is a sentinel, not a real team id — it maps to the
+      // backend's all_teams_only flag instead of team_id, matching how the
+      // calendar's own team filter handles the same sentinel.
+      if (key === "teamId" && value === ORGANIZATION_TEAM_FILTER) {
+        params.set("all_teams_only", "true");
+        continue;
+      }
+      params.set(paramKey, value);
     }
     if (extra) {
       for (const [k, v] of Object.entries(extra)) {
