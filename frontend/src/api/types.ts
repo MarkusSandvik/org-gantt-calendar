@@ -13,6 +13,11 @@ export interface Project {
   auto_scheduling_enabled: boolean;
   archived_at: string | null;
   created_by_id: number | null;
+  default_gantt_team_id: number | null;
+  default_gantt_tag_id: number | null;
+  default_calendar_all_teams: boolean;
+  default_calendar_team_id: number | null;
+  default_calendar_tag_id: number | null;
 }
 
 export interface ProjectCreatePayload {
@@ -31,6 +36,11 @@ export interface ProjectUpdatePayload {
   description?: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  default_gantt_team_id?: number | null;
+  default_gantt_tag_id?: number | null;
+  default_calendar_all_teams?: boolean;
+  default_calendar_team_id?: number | null;
+  default_calendar_tag_id?: number | null;
 }
 
 export type TeamCategory = "hardware" | "software" | "organization";
@@ -303,6 +313,8 @@ export interface CalendarEventRef {
   title: string;
 }
 
+export type RecurrenceFrequency = "daily" | "weekly" | "biweekly" | "monthly";
+
 export interface CalendarEvent {
   id: number;
   project_id: number;
@@ -317,6 +329,10 @@ export interface CalendarEvent {
   all_teams: boolean;
   owner_user: ActivityRef | null;
   related_activity: CalendarEventRef | null;
+  tags: ActivityTagRef[];
+  recurrence_frequency: RecurrenceFrequency | null;
+  recurrence_end_date: string | null;
+  recurrence_group_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -334,6 +350,9 @@ export interface CalendarEventWritePayload {
   all_teams: boolean;
   owner_user_id: number | null;
   related_activity_id: number | null;
+  recurrence_frequency?: RecurrenceFrequency | null;
+  recurrence_end_date?: string | null;
+  tag_ids: number[];
 }
 
 export interface WeekCounts {

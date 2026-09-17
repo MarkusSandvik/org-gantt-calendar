@@ -16,7 +16,9 @@ class Tag(Base):
     color: Mapped[str | None] = mapped_column(String(20))
     archived_at: Mapped[dt.datetime | None] = mapped_column(default=None)
 
-    project: Mapped["Project"] = relationship(back_populates="tags")  # noqa: F821
+    project: Mapped["Project"] = relationship(  # noqa: F821
+        back_populates="tags", foreign_keys=[project_id]
+    )
 
 
 class TagAssociation(Base):

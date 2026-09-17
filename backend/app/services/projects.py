@@ -146,13 +146,19 @@ def create_project(db: Session, payload: ProjectCreate, created_by_id: int) -> P
 
 
 def update_project(db: Session, project_id: int, payload: ProjectUpdate) -> Project:
-    """Edits a project's own name/season/description/dates. Gated by the
-    same read-only rule as everything else it contains — a completed or
-    archived project's own record is frozen too, not just its activities
-    and milestones."""
+    """Edits a project's own name/season/description/dates, and its
+    Gantt/Calendar default-view settings. Gated by the same read-only rule
+    as everything else it contains — a completed or archived project's own
+    record is frozen too, not just its activities and milestones."""
     project = get_project(db, project_id)
     ensure_project_editable(db, project_id)
     data = payload.model_dump(exclude_unset=True)
+    for field in ("default_gantt_team_id", "default_calendar_team_id"):
+        if data.get(field) is not None and db.get(Team, data[field]) is None:
+            raise HTTPException(status_code=404, detail=f"Team {data[field]} not found")
+    for field in ("default_gantt_tag_id", "default_calendar_tag_id"):
+        if data.get(field) is not None and db.get(Tag, data[field]) is None:
+            raise HTTPException(status_code=404, detail=f"Tag {data[field]} not found")
     for field, value in data.items():
         setattr(project, field, value)
     db.commit()

@@ -286,6 +286,57 @@ def test_editing_project_is_a_partial_update(
     assert updated["description"] == original["description"]
 
 
+def test_admin_can_set_default_view_settings(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}",
+        json={
+            "default_gantt_team_id": seed_basics["team_id"],
+            "default_gantt_tag_id": seed_basics["tag_id"],
+            "default_calendar_all_teams": False,
+            "default_calendar_team_id": seed_basics["team_id"],
+            "default_calendar_tag_id": seed_basics["tag_id"],
+        },
+    )
+    assert response.status_code == 200, response.text
+    updated = response.json()
+    assert updated["default_gantt_team_id"] == seed_basics["team_id"]
+    assert updated["default_gantt_tag_id"] == seed_basics["tag_id"]
+    assert updated["default_calendar_all_teams"] is False
+    assert updated["default_calendar_team_id"] == seed_basics["team_id"]
+    assert updated["default_calendar_tag_id"] == seed_basics["tag_id"]
+
+
+def test_new_project_defaults_calendar_to_organization(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    project = client.get(f"/api/v1/projects/{seed_basics['project_id']}").json()
+    assert project["default_calendar_all_teams"] is True
+    assert project["default_calendar_team_id"] is None
+    assert project["default_gantt_team_id"] is None
+
+
+def test_default_view_settings_reject_unknown_team(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}",
+        json={"default_gantt_team_id": 9999},
+    )
+    assert response.status_code == 404
+
+
+def test_default_view_settings_reject_unknown_tag(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    response = client.patch(
+        f"/api/v1/projects/{seed_basics['project_id']}",
+        json={"default_calendar_tag_id": 9999},
+    )
+    assert response.status_code == 404
+
+
 def test_completed_project_rejects_edit(
     client: TestClient, seed_basics: dict[str, int]
 ) -> None:

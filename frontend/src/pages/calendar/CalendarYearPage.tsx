@@ -6,13 +6,17 @@ import type {
   Activity,
   CalendarEvent,
   CalendarEventWritePayload,
+  Tag,
   Team,
   User,
 } from "../../api/types";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
+import { CalendarFilterBar } from "../../components/calendar/CalendarFilterBar";
+import { confirmDeleteCalendarEvent } from "../../components/calendar/confirmDeleteCalendarEvent";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
 import { buildMonthGrid } from "../../components/calendar/monthLayout";
 import { useProject } from "../../contexts/ProjectContext";
+import { calendarQuerySuffix, useCalendarFilters } from "../../hooks/useCalendarFilters";
 import { formatISODate } from "../../utils/date";
 
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
@@ -57,14 +61,21 @@ export function CalendarYearPage() {
     queryFn: () => api.get<Activity[]>(`/activities?project_id=${projectId}`),
     enabled: projectId != null,
   });
+  const { data: tags } = useQuery({
+    queryKey: ["tags", { projectId }],
+    queryFn: () => api.get<Tag[]>(`/tags?project_id=${projectId}`),
+    enabled: projectId != null,
+  });
+
+  const { teamFilter, tagFilter, setTeamFilter, setTagFilter, queryParams } = useCalendarFilters(project);
 
   const rangeFrom = `${year}-01-01`;
   const rangeTo = `${year}-12-31`;
   const { data: events } = useQuery({
-    queryKey: ["calendar-events", { projectId, from: rangeFrom, to: rangeTo }],
+    queryKey: ["calendar-events", { projectId, from: rangeFrom, to: rangeTo, ...queryParams }],
     queryFn: () =>
       api.get<CalendarEvent[]>(
-        `/calendar-events?project_id=${projectId}&date_from=${rangeFrom}T00:00:00&date_to=${rangeTo}T23:59:59`,
+        `/calendar-events?project_id=${projectId}&date_from=${rangeFrom}T00:00:00&date_to=${rangeTo}T23:59:59${calendarQuerySuffix(queryParams)}`,
       ),
     enabled: projectId != null,
   });
@@ -101,7 +112,8 @@ export function CalendarYearPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/calendar-events/${id}`),
+    mutationFn: ({ id, deleteFuture }: { id: number; deleteFuture: boolean }) =>
+      api.delete(`/calendar-events/${id}${deleteFuture ? "?delete_future=true" : ""}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       closeModal();
@@ -145,6 +157,15 @@ export function CalendarYearPage() {
           </button>
         )}
       </div>
+
+      <CalendarFilterBar
+        teams={teams ?? []}
+        tags={tags ?? []}
+        teamFilter={teamFilter}
+        tagFilter={tagFilter}
+        onTeamChange={setTeamFilter}
+        onTagChange={setTagFilter}
+      />
 
       <div className="year-grid">
         {MONTH_NAMES.map((name, monthIndex) => {
@@ -192,7 +213,7 @@ export function CalendarYearPage() {
         })}
       </div>
 
-      {modalState && teams && users && activities && (
+      {modalState && teams && users && activities && tags && (
         <CalendarEventModal
           projectId={projectId}
           event={modalState.event}
@@ -200,6 +221,7 @@ export function CalendarYearPage() {
           teams={teams}
           users={users}
           activities={activities}
+          tags={tags}
           canEditProject={canEdit}
           submitting={createMutation.isPending || updateMutation.isPending}
           errorMessage={formError}
@@ -215,8 +237,12 @@ export function CalendarYearPage() {
           onDelete={
             modalState.event && canEdit
               ? () => {
-                  if (confirm(`Delete "${modalState.event!.title}"?`)) {
-                    deleteMutation.mutate(modalState.event!.id);
+                  const scope = confirmDeleteCalendarEvent(modalState.event!);
+                  if (scope) {
+                    deleteMutation.mutate({
+                      id: modalState.event!.id,
+                      deleteFuture: scope === "series_future",
+                    });
                   }
                 }
               : undefined

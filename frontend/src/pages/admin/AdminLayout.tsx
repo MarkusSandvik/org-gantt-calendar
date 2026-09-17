@@ -15,6 +15,7 @@ const SECTIONS: {
   { label: "Baselines", to: "baselines" },
   { label: "Import / Export", to: "import-export" },
   { label: "Projects", to: "projects", requiresAdmin: true },
+  { label: "Settings", to: "settings", requiresAdmin: true },
 ];
 
 export function AdminLayout() {

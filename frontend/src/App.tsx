@@ -8,6 +8,7 @@ import { BaselinesAdmin } from "./pages/admin/BaselinesAdmin";
 import { DependenciesAdmin } from "./pages/admin/DependenciesAdmin";
 import { ImportExportAdmin } from "./pages/admin/ImportExportAdmin";
 import { ProjectsAdmin } from "./pages/admin/ProjectsAdmin";
+import { SettingsAdmin } from "./pages/admin/SettingsAdmin";
 import { TagsAdmin } from "./pages/admin/TagsAdmin";
 import { TeamsAdmin } from "./pages/admin/TeamsAdmin";
 import { UsersAdmin } from "./pages/admin/UsersAdmin";
@@ -110,6 +111,7 @@ export function App() {
               <Route path="import-export" element={<ImportExportAdmin />} />
               <Route path="users" element={<UsersAdmin />} />
               <Route path="projects" element={<ProjectsAdmin />} />
+              <Route path="settings" element={<SettingsAdmin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Route>

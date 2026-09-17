@@ -105,3 +105,14 @@ class CalendarEventType(str, enum.Enum):
     PRESENTATION = "presentation"
     STAND_DUTY = "stand_duty"
     OTHER = "other"
+
+
+class RecurrenceFrequency(str, enum.Enum):
+    """How a recurring calendar event repeats. Deliberately just these four —
+    no day-of-week/nth-weekday rules — matching the simple "weekly team
+    meeting" / "biweekly board meeting" use cases this app actually has."""
+
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"

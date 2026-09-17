@@ -30,8 +30,10 @@ def _get_event_or_404(db: Session, event_id: int) -> CalendarEvent:
 def list_calendar_events(
     project_id: int,
     team_id: int | None = None,
+    all_teams_only: bool = False,
     owner_user_id: int | None = None,
     event_type: CalendarEventType | None = None,
+    tag_id: int | None = None,
     date_from: dt.datetime | None = None,
     date_to: dt.datetime | None = None,
     q: str | None = None,
@@ -42,8 +44,10 @@ def list_calendar_events(
         db,
         project_id=project_id,
         team_id=team_id,
+        all_teams_only=all_teams_only,
         owner_user_id=owner_user_id,
         event_type=event_type,
+        tag_id=tag_id,
         date_from=date_from,
         date_to=date_to,
         q=q,
@@ -71,7 +75,7 @@ def create_calendar_event(
     if payload.all_teams:
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can create a calendar event that applies to all teams.",
+            "Only an Admin can create a calendar event that applies to the Organization.",
         )
     return calendar_event_service.create_calendar_event(db, payload)
 
@@ -88,7 +92,7 @@ def update_calendar_event(
     if payload.all_teams:
         permissions.require(
             permissions.can_apply_to_all_teams(current_user),
-            "Only an Admin can set a calendar event to apply to all teams.",
+            "Only an Admin can set a calendar event to apply to the Organization.",
         )
     return calendar_event_service.update_calendar_event(db, event_id, payload)
 
@@ -96,10 +100,11 @@ def update_calendar_event(
 @router.delete("/{event_id}", status_code=204)
 def delete_calendar_event(
     event_id: int,
+    delete_future: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Response:
     event = _get_event_or_404(db, event_id)
     permissions.require(permissions.can_manage_calendar_event(db, current_user, event))
-    calendar_event_service.delete_calendar_event(db, event_id)
+    calendar_event_service.delete_calendar_event(db, event_id, delete_future=delete_future)
     return Response(status_code=204)

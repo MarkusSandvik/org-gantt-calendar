@@ -67,7 +67,7 @@ function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
   if (allTeams.length > 0) {
     groups.push({
       key: "all-teams",
-      label: "All Teams",
+      label: "Organization",
       activities: allTeams.sort((a, b) => a.start_date.localeCompare(b.start_date)),
     });
   }
@@ -107,11 +107,19 @@ export function GanttChart() {
   const [reschedule, setReschedule] = useState<RescheduleTarget | null>(null);
   const [exporting, setExporting] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
-  const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters();
   const { canEditActivity, canManageMilestone } = usePermissions();
 
   const { project, canEdit } = useProject();
   const projectId = project?.id;
+
+  const { filters, setFilter, reset, isActive, toQueryString } = useActivityFilters(
+    project
+      ? {
+          teamId: project.default_gantt_team_id?.toString() ?? "",
+          tagId: project.default_gantt_tag_id?.toString() ?? "",
+        }
+      : undefined,
+  );
 
   const { data: teams } = useQuery({
     queryKey: ["teams", { projectId }],
@@ -442,7 +450,7 @@ export function GanttChart() {
                       <div className="gantt-row__label" style={{ width: LABEL_WIDTH }}>
                         {activity.title}
                         {viewMode === "timeline" && activity.all_teams && (
-                          <span className="gantt-row__label-team"> · All Teams</span>
+                          <span className="gantt-row__label-team"> · Organization</span>
                         )}
                         {viewMode === "timeline" && !activity.all_teams && activity.owner_team && (
                           <span className="gantt-row__label-team"> · {activity.owner_team.name}</span>

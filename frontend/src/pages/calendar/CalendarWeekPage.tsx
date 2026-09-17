@@ -6,14 +6,18 @@ import type {
   Activity,
   CalendarEvent,
   CalendarEventWritePayload,
+  Tag,
   Team,
   User,
 } from "../../api/types";
 import { PriorityBadge } from "../../components/PriorityBadge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
+import { CalendarFilterBar } from "../../components/calendar/CalendarFilterBar";
+import { confirmDeleteCalendarEvent } from "../../components/calendar/confirmDeleteCalendarEvent";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
 import { useProject } from "../../contexts/ProjectContext";
+import { calendarQuerySuffix, useCalendarFilters } from "../../hooks/useCalendarFilters";
 import { addDays, formatISODate, getISOWeek, isoWeekToMonday } from "../../utils/date";
 
 const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -52,12 +56,22 @@ export function CalendarWeekPage() {
     queryFn: () => api.get<Activity[]>(`/activities?project_id=${projectId}`),
     enabled: projectId != null,
   });
+  const { data: tags } = useQuery({
+    queryKey: ["tags", { projectId }],
+    queryFn: () => api.get<Tag[]>(`/tags?project_id=${projectId}`),
+    enabled: projectId != null,
+  });
+
+  const { teamFilter, tagFilter, setTeamFilter, setTagFilter, queryParams } = useCalendarFilters(project);
 
   const { data: events } = useQuery({
-    queryKey: ["calendar-events", { projectId, from: formatISODate(monday), to: formatISODate(sunday) }],
+    queryKey: [
+      "calendar-events",
+      { projectId, from: formatISODate(monday), to: formatISODate(sunday), ...queryParams },
+    ],
     queryFn: () =>
       api.get<CalendarEvent[]>(
-        `/calendar-events?project_id=${projectId}&date_from=${formatISODate(monday)}T00:00:00&date_to=${formatISODate(sunday)}T23:59:59`,
+        `/calendar-events?project_id=${projectId}&date_from=${formatISODate(monday)}T00:00:00&date_to=${formatISODate(sunday)}T23:59:59${calendarQuerySuffix(queryParams)}`,
       ),
     enabled: projectId != null,
   });
@@ -102,7 +116,8 @@ export function CalendarWeekPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/calendar-events/${id}`),
+    mutationFn: ({ id, deleteFuture }: { id: number; deleteFuture: boolean }) =>
+      api.delete(`/calendar-events/${id}${deleteFuture ? "?delete_future=true" : ""}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       closeModal();
@@ -170,6 +185,15 @@ export function CalendarWeekPage() {
         )}
       </div>
 
+      <CalendarFilterBar
+        teams={teams ?? []}
+        tags={tags ?? []}
+        teamFilter={teamFilter}
+        tagFilter={tagFilter}
+        onTeamChange={setTeamFilter}
+        onTagChange={setTagFilter}
+      />
+
       <div className="week-view">
         <div className="week-view__days">
           {days.map((day) => (
@@ -216,7 +240,7 @@ export function CalendarWeekPage() {
         </div>
       </div>
 
-      {modalState && teams && users && allActivities && (
+      {modalState && teams && users && allActivities && tags && (
         <CalendarEventModal
           projectId={projectId}
           event={modalState.event}
@@ -224,6 +248,7 @@ export function CalendarWeekPage() {
           teams={teams}
           users={users}
           activities={allActivities}
+          tags={tags}
           canEditProject={canEdit}
           submitting={createMutation.isPending || updateMutation.isPending}
           errorMessage={formError}
@@ -239,8 +264,12 @@ export function CalendarWeekPage() {
           onDelete={
             modalState.event && canEdit
               ? () => {
-                  if (confirm(`Delete "${modalState.event!.title}"?`)) {
-                    deleteMutation.mutate(modalState.event!.id);
+                  const scope = confirmDeleteCalendarEvent(modalState.event!);
+                  if (scope) {
+                    deleteMutation.mutate({
+                      id: modalState.event!.id,
+                      deleteFuture: scope === "series_future",
+                    });
                   }
                 }
               : undefined

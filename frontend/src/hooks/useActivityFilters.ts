@@ -42,17 +42,25 @@ const PARAM_KEYS: Record<keyof ActivityFilterState, string> = {
  * filters activities (Gantt, Admin > Activities, …). Keeping filters in the
  * URL makes them shareable/bookmarkable and lets global search results link
  * straight into a pre-filtered view.
+ *
+ * `defaults` (e.g. a project's Admin-configured Gantt default view) only
+ * fills in keys the URL doesn't already specify — a deep link or an
+ * explicit user choice always wins over the configured default.
  */
-export function useActivityFilters() {
+export function useActivityFilters(defaults?: Partial<ActivityFilterState>) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const filters: ActivityFilterState = useMemo(() => {
-    const result = { ...EMPTY };
+    const result = { ...EMPTY, ...defaults };
     for (const key of Object.keys(PARAM_KEYS) as (keyof ActivityFilterState)[]) {
-      result[key] = searchParams.get(PARAM_KEYS[key]) ?? "";
+      const fromUrl = searchParams.get(PARAM_KEYS[key]);
+      if (fromUrl != null) result[key] = fromUrl;
     }
     return result;
-  }, [searchParams]);
+    // Depend on the primitive default values, not `defaults` itself — an
+    // inline object literal at the call site would otherwise be a new
+    // reference every render and defeat this memo entirely.
+  }, [searchParams, defaults?.teamId, defaults?.tagId]);
 
   function setFilter(patch: Partial<ActivityFilterState>) {
     const next = new URLSearchParams(searchParams);

@@ -4,6 +4,8 @@ import type {
   CalendarEvent,
   CalendarEventType,
   CalendarEventWritePayload,
+  RecurrenceFrequency,
+  Tag,
   Team,
   User,
 } from "../../api/types";
@@ -23,6 +25,8 @@ const EVENT_TYPE_OPTIONS: CalendarEventType[] = [
   "other",
 ];
 
+const RECURRENCE_OPTIONS: RecurrenceFrequency[] = ["daily", "weekly", "biweekly", "monthly"];
+
 interface CalendarEventModalProps {
   projectId: number;
   event: CalendarEvent | null;
@@ -30,6 +34,7 @@ interface CalendarEventModalProps {
   teams: Team[];
   users: User[];
   activities: Activity[];
+  tags: Tag[];
   canEditProject: boolean;
   onSubmit: (payload: CalendarEventWritePayload) => void;
   onClose: () => void;
@@ -62,6 +67,9 @@ function toPayload(
       all_teams: false,
       owner_user_id: null,
       related_activity_id: null,
+      tag_ids: [],
+      recurrence_frequency: null,
+      recurrence_end_date: null,
     };
   }
   return {
@@ -77,6 +85,7 @@ function toPayload(
     all_teams: event.all_teams,
     owner_user_id: event.owner_user?.id ?? null,
     related_activity_id: event.related_activity?.id ?? null,
+    tag_ids: event.tags.map((t) => t.id),
   };
 }
 
@@ -87,6 +96,7 @@ export function CalendarEventModal({
   teams,
   users,
   activities,
+  tags,
   canEditProject,
   onSubmit,
   onClose,
@@ -98,6 +108,15 @@ export function CalendarEventModal({
     toPayload(projectId, event, defaultDate),
   );
   const { isAdmin } = usePermissions();
+
+  function toggleTag(tagId: number) {
+    setForm((f) => ({
+      ...f,
+      tag_ids: f.tag_ids.includes(tagId)
+        ? f.tag_ids.filter((id) => id !== tagId)
+        : [...f.tag_ids, tagId],
+    }));
+  }
 
   function toggleAllDay(checked: boolean) {
     setForm((f) => {
@@ -241,7 +260,7 @@ export function CalendarEventModal({
                 }
               >
                 <option value="">None</option>
-                {isAdmin && <option value="__all__">All teams</option>}
+                {isAdmin && <option value="__all__">Organization</option>}
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -291,6 +310,61 @@ export function CalendarEventModal({
               ))}
             </select>
           </label>
+
+          <fieldset disabled={!canEditProject}>
+            <legend>Tags</legend>
+            {tags.map((t) => (
+              <label key={t.id} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.tag_ids.includes(t.id)}
+                  onChange={() => toggleTag(t.id)}
+                />
+                {t.name}
+              </label>
+            ))}
+          </fieldset>
+
+          {!event && (
+            <div className="form-row">
+              <label>
+                Repeat
+                <select
+                  disabled={!canEditProject}
+                  value={form.recurrence_frequency ?? ""}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      recurrence_frequency: (e.target.value || null) as RecurrenceFrequency | null,
+                      recurrence_end_date: e.target.value ? f.recurrence_end_date : null,
+                    }))
+                  }
+                >
+                  <option value="">Does not repeat</option>
+                  {RECURRENCE_OPTIONS.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {form.recurrence_frequency && (
+                <label>
+                  Until
+                  <input
+                    type="date"
+                    required
+                    disabled={!canEditProject}
+                    min={form.start_datetime.slice(0, 10)}
+                    value={form.recurrence_end_date ?? ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, recurrence_end_date: e.target.value || null }))
+                    }
+                  />
+                </label>
+              )}
+            </div>
+          )}
 
           {errorMessage && <p className="form-error">{errorMessage}</p>}
 

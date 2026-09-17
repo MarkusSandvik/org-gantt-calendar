@@ -20,6 +20,11 @@ class ProjectRead(BaseModel):
     auto_scheduling_enabled: bool
     archived_at: dt.datetime | None
     created_by_id: int | None
+    default_gantt_team_id: int | None
+    default_gantt_tag_id: int | None
+    default_calendar_all_teams: bool
+    default_calendar_team_id: int | None
+    default_calendar_tag_id: int | None
 
 
 class ProjectCreate(BaseModel):
@@ -45,6 +50,11 @@ class ProjectUpdate(BaseModel):
     description: str | None = None
     start_date: dt.date | None = None
     end_date: dt.date | None = None
+    default_gantt_team_id: int | None = None
+    default_gantt_tag_id: int | None = None
+    default_calendar_all_teams: bool | None = None
+    default_calendar_team_id: int | None = None
+    default_calendar_tag_id: int | None = None
 
 
 class ProjectStatusUpdate(BaseModel):

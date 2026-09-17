@@ -24,7 +24,9 @@ class Team(TimestampMixin, Base):
     auto_transfer_membership: Mapped[bool] = mapped_column(Boolean, default=False)
     archived_at: Mapped[dt.datetime | None] = mapped_column(default=None)
 
-    project: Mapped["Project"] = relationship(back_populates="teams")  # noqa: F821
+    project: Mapped["Project"] = relationship(  # noqa: F821
+        back_populates="teams", foreign_keys=[project_id]
+    )
     memberships: Mapped[list["TeamMembership"]] = relationship(back_populates="team")
 
 

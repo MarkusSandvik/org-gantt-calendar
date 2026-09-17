@@ -27,9 +27,45 @@ class Project(TimestampMixin, Base):
     archived_at: Mapped[dt.datetime | None] = mapped_column(default=None)
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
 
+    # Admin-configured starting filter for the Gantt and Calendar views (the
+    # Settings admin tab) — applied only until a viewer picks their own
+    # filter, never a restriction on what they can see. Gantt has no
+    # "Organization only" filter state (see FilterBar), so it needs only a
+    # team/tag pair; Calendar's own filter also distinguishes "no filter"
+    # from "Organization only", hence the extra boolean there.
+    #
+    # use_alter=True: teams.project_id and tags.project_id already point
+    # back at this table, so these four columns would otherwise create a
+    # circular FK dependency between projects/teams/tags that SQLAlchemy
+    # can't topologically sort for CREATE TABLE (harmless on SQLite, but a
+    # real failure on stricter dialects like Postgres). use_alter defers
+    # each of these to its own ALTER TABLE ADD CONSTRAINT after all three
+    # tables exist, which breaks the cycle.
+    default_gantt_team_id: Mapped[int | None] = mapped_column(
+        ForeignKey("teams.id", use_alter=True, name="fk_projects_default_gantt_team_id_teams")
+    )
+    default_gantt_tag_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tags.id", use_alter=True, name="fk_projects_default_gantt_tag_id_tags")
+    )
+    default_calendar_all_teams: Mapped[bool] = mapped_column(Boolean, default=True)
+    default_calendar_team_id: Mapped[int | None] = mapped_column(
+        ForeignKey("teams.id", use_alter=True, name="fk_projects_default_calendar_team_id_teams")
+    )
+    default_calendar_tag_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tags.id", use_alter=True, name="fk_projects_default_calendar_tag_id_tags")
+    )
+
     created_by: Mapped["User | None"] = relationship()  # noqa: F821
-    teams: Mapped[list["Team"]] = relationship(back_populates="project")  # noqa: F821
-    tags: Mapped[list["Tag"]] = relationship(back_populates="project")  # noqa: F821
+    # foreign_keys is required on both these and their Team.project/Tag.project
+    # counterparts — the default_gantt_team_id/default_calendar_team_id (and
+    # tag equivalents) above add extra FK paths between these two tables, so
+    # SQLAlchemy can no longer infer which one this one-to-many is over.
+    teams: Mapped[list["Team"]] = relationship(  # noqa: F821
+        back_populates="project", foreign_keys="Team.project_id"
+    )
+    tags: Mapped[list["Tag"]] = relationship(  # noqa: F821
+        back_populates="project", foreign_keys="Tag.project_id"
+    )
     activities: Mapped[list["Activity"]] = relationship(back_populates="project")  # noqa: F821
     milestones: Mapped[list["Milestone"]] = relationship(back_populates="project")  # noqa: F821
     calendar_events: Mapped[list["CalendarEvent"]] = relationship(back_populates="project")  # noqa: F821
