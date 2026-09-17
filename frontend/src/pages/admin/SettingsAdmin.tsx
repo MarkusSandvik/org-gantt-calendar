@@ -90,6 +90,10 @@ export function SettingsAdmin() {
       <form onSubmit={handleSubmit}>
         <fieldset>
           <legend>Project Schedule (Gantt) default view</legend>
+          <p className="form-hint">
+            The team also sets Milestones' default filter — there's no separate Milestones
+            setting. The tag applies to the Gantt only.
+          </p>
           <div className="form-row">
             <label>
               Team

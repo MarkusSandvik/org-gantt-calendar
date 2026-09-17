@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError } from "../../api/client";
 import type {
   Dependency,
@@ -56,6 +56,18 @@ export function MilestonesPage() {
   const [teamFilter, setTeamFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+
+  // Reuses the Gantt default-view team (Settings tab) rather than adding a
+  // third, near-duplicate setting — applied once, the first time the
+  // project loads, so it never overwrites a filter the viewer already
+  // changed themselves.
+  const [appliedProjectDefault, setAppliedProjectDefault] = useState(false);
+  useEffect(() => {
+    if (project && !appliedProjectDefault) {
+      setTeamFilter(project.default_gantt_team_id?.toString() ?? "");
+      setAppliedProjectDefault(true);
+    }
+  }, [project, appliedProjectDefault]);
 
   const { data: milestones, isLoading } = useQuery({
     queryKey: ["milestones", "filtered", { projectId, teamFilter, statusFilter, search }],
