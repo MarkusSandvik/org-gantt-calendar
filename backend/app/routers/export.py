@@ -36,3 +36,21 @@ def export_plan_xlsx(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=plan_export.xlsx"},
     )
+
+
+@router.get("/activities-changelog.xlsx")
+def export_activities_changelog_xlsx(
+    project_id: int,
+    team_id: int | None = None,
+    all_teams_only: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    content = export_service.export_activities_with_changelog_xlsx(
+        db, project_id, team_id=team_id, all_teams_only=all_teams_only
+    )
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=activities_changelog_export.xlsx"},
+    )

@@ -119,3 +119,74 @@ def test_export_plan_xlsx_has_activities_and_milestones_sheets(
     ]
     assert milestones_sheet[2][0].value == "Drone in Water"
     assert milestones_sheet[2][2].value == "2027-01-18"
+
+
+def test_export_activities_changelog_xlsx_has_expected_sheets(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    activity = make_activity(client, seed_basics)
+    client.patch(
+        f"/api/v1/activities/{activity['id']}",
+        json={"progress_percent": 40, "reason": "Halfway through housing machining"},
+    )
+
+    response = client.get(
+        "/api/v1/export/activities-changelog.xlsx",
+        params={"project_id": seed_basics["project_id"]},
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(response.content))
+    assert wb.sheetnames == ["Activities", "Change Log"]
+
+    activities_sheet = wb["Activities"]
+    assert activities_sheet[2][0].value == "PCB Design"
+
+    changelog_sheet = wb["Change Log"]
+    assert [c.value for c in changelog_sheet[1]] == [
+        "activity",
+        "field",
+        "old_value",
+        "new_value",
+        "changed_by",
+        "timestamp",
+        "reason",
+    ]
+    row = [c.value for c in changelog_sheet[2]]
+    assert row[0] == "PCB Design"
+    assert row[1] == "progress_percent"
+    assert row[2] == "0"
+    assert row[3] == "40"
+    assert row[6] == "Halfway through housing machining"
+
+
+def test_export_activities_changelog_xlsx_filters_by_team(
+    client: TestClient, seed_basics: dict[str, int]
+) -> None:
+    make_activity(client, seed_basics, title="Team-only")
+    make_activity(
+        client, seed_basics, title="Org-wide", owner_team_id=None, all_teams=True
+    )
+
+    org_only = client.get(
+        "/api/v1/export/activities-changelog.xlsx",
+        params={"project_id": seed_basics["project_id"], "all_teams_only": True},
+    )
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(org_only.content))
+    activities_sheet = wb["Activities"]
+    assert [row[0].value for row in activities_sheet.iter_rows(min_row=2)] == ["Org-wide"]
+
+    team_only = client.get(
+        "/api/v1/export/activities-changelog.xlsx",
+        params={"project_id": seed_basics["project_id"], "team_id": seed_basics["team_id"]},
+    )
+    wb2 = load_workbook(io.BytesIO(team_only.content))
+    activities_sheet2 = wb2["Activities"]
+    assert [row[0].value for row in activities_sheet2.iter_rows(min_row=2)] == ["Team-only"]

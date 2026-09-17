@@ -1,12 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { api, ApiError } from "../../api/client";
 import { useProject } from "../../contexts/ProjectContext";
+import { ORGANIZATION_TEAM_FILTER } from "../../hooks/useCalendarFilters";
 import { usePermissions } from "../../hooks/usePermissions";
 import type {
   ImportApplyResponse,
   ImportPreviewResponse,
   ImportRowResult,
+  Team,
 } from "../../api/types";
 
 function RowErrors({ row }: { row: ImportRowResult }) {
@@ -66,10 +68,27 @@ export function ImportExportAdmin() {
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
   const [applyResult, setApplyResult] = useState<ImportApplyResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [changelogTeamFilter, setChangelogTeamFilter] = useState("");
 
   const { project, canEdit } = useProject();
   const projectId = project?.id;
   const canImport = (isAdmin || isLeadOfAnyTeam) && canEdit;
+
+  const { data: teams } = useQuery({
+    queryKey: ["teams", { projectId }],
+    queryFn: () => api.get<Team[]>(`/teams?project_id=${projectId}`),
+    enabled: projectId != null,
+  });
+
+  const changelogExportHref = (() => {
+    const params = new URLSearchParams({ project_id: String(projectId) });
+    if (changelogTeamFilter === ORGANIZATION_TEAM_FILTER) {
+      params.set("all_teams_only", "true");
+    } else if (changelogTeamFilter) {
+      params.set("team_id", changelogTeamFilter);
+    }
+    return `/api/v1/export/activities-changelog.xlsx?${params.toString()}`;
+  })();
 
   const previewMutation = useMutation({
     mutationFn: (file: File) => {
@@ -151,6 +170,32 @@ export function ImportExportAdmin() {
           download="plan_export.xlsx"
         >
           Export full plan (XLSX)
+        </a>
+      </div>
+
+      <p className="page__phase-note">
+        Activities with their full change log (every edit, who made it, and
+        why), scoped to a team the same way the Activities filter is.
+      </p>
+      <div className="toolbar">
+        <select
+          value={changelogTeamFilter}
+          onChange={(e) => setChangelogTeamFilter(e.target.value)}
+        >
+          <option value="">All teams</option>
+          <option value={ORGANIZATION_TEAM_FILTER}>Organization</option>
+          {(teams ?? []).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <a
+          className="button"
+          href={changelogExportHref}
+          download="activities_changelog_export.xlsx"
+        >
+          Export activities with change log (XLSX)
         </a>
       </div>
 
