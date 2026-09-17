@@ -146,6 +146,7 @@ export function CalendarYearPage() {
           monthHref={`/${projectSlug}/calendar/month/${year}/${today.getFullYear() === year ? today.getMonth() + 1 : 1}`}
           weekHref={`/${projectSlug}/calendar/week/${year}/1`}
           yearHref={`/${projectSlug}/calendar/year/${year}`}
+          wheelHref={`/${projectSlug}/calendar/wheel`}
         />
         {canEdit && (
           <button

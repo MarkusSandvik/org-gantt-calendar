@@ -14,6 +14,7 @@ import { TeamsAdmin } from "./pages/admin/TeamsAdmin";
 import { UsersAdmin } from "./pages/admin/UsersAdmin";
 import { CalendarMonthPage } from "./pages/calendar/CalendarMonthPage";
 import { CalendarWeekPage } from "./pages/calendar/CalendarWeekPage";
+import { CalendarWheelPage } from "./pages/calendar/CalendarWheelPage";
 import { CalendarYearPage } from "./pages/calendar/CalendarYearPage";
 import { ProjectProvider, useProject } from "./contexts/ProjectContext";
 import { Dashboard } from "./pages/Dashboard";
@@ -99,6 +100,7 @@ export function App() {
             <Route path="calendar/week/:isoYear/:isoWeek" element={<CalendarWeekPage />} />
             <Route path="calendar/year" element={<CalendarYearPage />} />
             <Route path="calendar/year/:year" element={<CalendarYearPage />} />
+            <Route path="calendar/wheel" element={<CalendarWheelPage />} />
             <Route path="milestones" element={<MilestonesPage />} />
             <Route path="my-tasks" element={<MyTasks />} />
             <Route path="admin" element={<AdminLayout />}>

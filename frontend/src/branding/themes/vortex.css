@@ -36,6 +36,15 @@
   --color-nav-text-active: #ffffff;
   --color-track-empty: #e3ded8;
 
+  /* Annual wheel activity-slice palette. Slice 1 is Vortex's exact logo
+   * red (--brand-primary), by explicit request even though it sits close
+   * in hue to the app's "blocked" status red (#d1453b) elsewhere in this
+   * same diagram — accepted as a deliberate brand-over-disambiguation
+   * tradeoff rather than an oversight. Slice 2 is a muted wine tone kept
+   * from the original pair for contrast against the red. */
+  --color-wheel-slice-1: var(--brand-primary);
+  --color-wheel-slice-2: #7a4a5c;
+
   /* Brand tokens — theme-invariant, exact site values */
   --brand-primary: #c21c1c;
   --brand-accent-hover: #dc2626;

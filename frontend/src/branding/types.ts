@@ -10,6 +10,10 @@ export interface BrandingConfig {
   /** Wordmark/logo shown in the nav and on Login. Falls back to a text-only
    * productName when absent — no org is required to supply a logo image. */
   logoHref?: string;
+  /** Icon-only mark (no wordmark text), used where space is tight or
+   * circular — e.g. the annual wheel's center hub. Falls back to a plain
+   * hub with no image when absent. */
+  iconHref?: string;
   /** Applied before a visitor has made an explicit theme choice (see
    * useTheme.ts). Falls back to "system" when absent. */
   defaultTheme?: ThemePreference;

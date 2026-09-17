@@ -8,6 +8,7 @@ import { FilterBar } from "../filters/FilterBar";
 import { useProject } from "../../contexts/ProjectContext";
 import { useActivityFilters } from "../../hooks/useActivityFilters";
 import { usePermissions } from "../../hooks/usePermissions";
+import { buildGroups, type ActivityGroup } from "./activityGroups";
 import { DependencyArrows } from "./DependencyArrows";
 import { GanttBar } from "./GanttBar";
 import { MilestoneMarker } from "./MilestoneMarker";
@@ -30,56 +31,6 @@ import {
 } from "./dateScale";
 
 const LABEL_WIDTH = 240;
-
-interface ActivityGroup {
-  key: string;
-  label: string;
-  activities: Activity[];
-}
-
-function buildGroups(activities: Activity[], teams: Team[]): ActivityGroup[] {
-  const byTeam = new Map<number, Activity[]>();
-  const allTeams: Activity[] = [];
-  const unassigned: Activity[] = [];
-  for (const activity of activities) {
-    if (activity.all_teams) {
-      allTeams.push(activity);
-    } else if (activity.owner_team) {
-      const list = byTeam.get(activity.owner_team.id) ?? [];
-      list.push(activity);
-      byTeam.set(activity.owner_team.id, list);
-    } else {
-      unassigned.push(activity);
-    }
-  }
-
-  const groups: ActivityGroup[] = [];
-  for (const team of [...teams].sort((a, b) => a.sort_order - b.sort_order)) {
-    const list = byTeam.get(team.id);
-    if (list && list.length > 0) {
-      groups.push({
-        key: `team-${team.id}`,
-        label: team.name,
-        activities: [...list].sort((a, b) => a.start_date.localeCompare(b.start_date)),
-      });
-    }
-  }
-  if (allTeams.length > 0) {
-    groups.push({
-      key: "all-teams",
-      label: "Organization",
-      activities: allTeams.sort((a, b) => a.start_date.localeCompare(b.start_date)),
-    });
-  }
-  if (unassigned.length > 0) {
-    groups.push({
-      key: "unassigned",
-      label: "Unassigned",
-      activities: unassigned.sort((a, b) => a.start_date.localeCompare(b.start_date)),
-    });
-  }
-  return groups;
-}
 
 type ViewMode = "team" | "timeline";
 

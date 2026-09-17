@@ -1,37 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
 import { api, ApiError } from "../../api/client";
-import type {
-  Activity,
-  CalendarEvent,
-  CalendarEventWritePayload,
-  Tag,
-  Team,
-  User,
-} from "../../api/types";
+import type { Activity, CalendarEvent, CalendarEventWritePayload, Tag, Team, User } from "../../api/types";
+import { AnnualWheel } from "../../components/calendar/AnnualWheel";
 import { CalendarEventModal } from "../../components/calendar/CalendarEventModal";
 import { CalendarFilterBar } from "../../components/calendar/CalendarFilterBar";
-import { confirmDeleteCalendarEvent } from "../../components/calendar/confirmDeleteCalendarEvent";
 import { CalendarViewSwitcher } from "../../components/calendar/CalendarViewSwitcher";
-import { MonthGrid } from "../../components/calendar/MonthGrid";
-import { buildMonthGrid } from "../../components/calendar/monthLayout";
+import { confirmDeleteCalendarEvent } from "../../components/calendar/confirmDeleteCalendarEvent";
 import { useProject } from "../../contexts/ProjectContext";
-import { calendarQuerySuffix, useCalendarFilters } from "../../hooks/useCalendarFilters";
-import { addDays, formatISODate, getISOWeek } from "../../utils/date";
+import { ORGANIZATION_TEAM_FILTER, calendarQuerySuffix, useCalendarFilters } from "../../hooks/useCalendarFilters";
+import { addDays, formatISODate } from "../../utils/date";
 
-const MONTH_LABEL = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
-
-export function CalendarMonthPage() {
-  const navigate = useNavigate();
+export function CalendarWheelPage() {
   const queryClient = useQueryClient();
-  const params = useParams<{ year?: string; month?: string }>();
-  const today = new Date();
-  const [year, setYear] = useState(params.year ? Number(params.year) : today.getFullYear());
-  const [month, setMonth] = useState(params.month ? Number(params.month) - 1 : today.getMonth());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const { project, canEdit } = useProject();
   const projectId = project?.id;
+  const projectSlug = project?.slug;
 
   const { data: teams } = useQuery({
     queryKey: ["teams", { projectId }],
@@ -55,19 +42,27 @@ export function CalendarMonthPage() {
 
   const { teamFilter, tagFilter, setTeamFilter, setTagFilter, queryParams } = useCalendarFilters(project);
 
-  const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
-  const rangeStart = grid[0].days[0].date;
-  const rangeEnd = addDays(grid[grid.length - 1].days[6].date, 1);
-  const weekOfFirst = getISOWeek(new Date(year, month, 1));
+  // The pie chart mirrors the same team scope as the Calendar's own filter
+  // (Organization/a specific team/no filter) rather than always showing
+  // every activity in the project — "Related activity" below deliberately
+  // keeps using the unfiltered `activities` list, since picking one there
+  // is a data-entry concern independent of what the wheel is displaying.
+  const wheelActivities = (activities ?? []).filter((activity) => {
+    if (!teamFilter) return true;
+    if (teamFilter === ORGANIZATION_TEAM_FILTER) return activity.all_teams;
+    return activity.owner_team?.id === Number(teamFilter);
+  });
 
+  // The wheel is a rolling 365-day window starting today, not a calendar
+  // year — it re-centers on whatever "today" is whenever it's opened,
+  // rather than showing Jan-Dec of a fixed year.
+  const rangeFrom = formatISODate(today);
+  const rangeTo = formatISODate(addDays(today, 364));
   const { data: events } = useQuery({
-    queryKey: [
-      "calendar-events",
-      { projectId, from: formatISODate(rangeStart), to: formatISODate(rangeEnd), ...queryParams },
-    ],
+    queryKey: ["calendar-events", { projectId, from: rangeFrom, to: rangeTo, ...queryParams }],
     queryFn: () =>
       api.get<CalendarEvent[]>(
-        `/calendar-events?project_id=${projectId}&date_from=${formatISODate(rangeStart)}T00:00:00&date_to=${formatISODate(rangeEnd)}T00:00:00${calendarQuerySuffix(queryParams)}`,
+        `/calendar-events?project_id=${projectId}&date_from=${rangeFrom}T00:00:00&date_to=${rangeTo}T23:59:59${calendarQuerySuffix(queryParams)}`,
       ),
     enabled: projectId != null,
   });
@@ -111,46 +106,26 @@ export function CalendarMonthPage() {
     },
   });
 
-  function goToMonth(delta: number) {
-    const next = new Date(year, month + delta, 1);
-    setYear(next.getFullYear());
-    setMonth(next.getMonth());
-  }
-
-  if (!project) {
+  if (!projectId) {
     return <p>Loading calendar...</p>;
   }
-  const projectSlug = project.slug;
 
   return (
     <div className="page">
       <h1>Calendar</h1>
+      <p className="page__phase-note">
+        The annual wheel — today is always at the top, with the next 12 months laid out clockwise
+        around it.
+      </p>
 
       <div className="calendar-toolbar">
-        <div className="calendar-toolbar__nav">
-          <button type="button" className="button" onClick={() => goToMonth(-1)}>
-            ← Prev
-          </button>
-          <button
-            type="button"
-            className="button"
-            onClick={() => {
-              setYear(today.getFullYear());
-              setMonth(today.getMonth());
-            }}
-          >
-            Today
-          </button>
-          <button type="button" className="button" onClick={() => goToMonth(1)}>
-            Next →
-          </button>
-        </div>
-        <h2 className="calendar-toolbar__label">{MONTH_LABEL.format(new Date(year, month, 1))}</h2>
+        <div className="calendar-toolbar__nav" />
+        <div className="calendar-toolbar__label" />
         <CalendarViewSwitcher
-          active="month"
-          monthHref={`/${projectSlug}/calendar/month/${year}/${month + 1}`}
-          weekHref={`/${projectSlug}/calendar/week/${weekOfFirst.isoYear}/${weekOfFirst.week}`}
-          yearHref={`/${projectSlug}/calendar/year/${year}`}
+          active="wheel"
+          monthHref={`/${projectSlug}/calendar/month/${today.getFullYear()}/${today.getMonth() + 1}`}
+          weekHref={`/${projectSlug}/calendar/week/${today.getFullYear()}/1`}
+          yearHref={`/${projectSlug}/calendar/year/${today.getFullYear()}`}
           wheelHref={`/${projectSlug}/calendar/wheel`}
         />
         {canEdit && (
@@ -173,18 +148,17 @@ export function CalendarMonthPage() {
         onTagChange={setTagFilter}
       />
 
-      <MonthGrid
-        year={year}
-        month={month}
+      <AnnualWheel
+        today={today}
         events={events ?? []}
-        onDayClick={canEdit ? (date) => setModalState({ event: null, defaultDate: date }) : () => {}}
+        activities={wheelActivities}
+        teams={teams ?? []}
         onEventClick={(event) => setModalState({ event, defaultDate: null })}
-        onWeekClick={(isoYear, isoWeek) => navigate(`/${projectSlug}/calendar/week/${isoYear}/${isoWeek}`)}
       />
 
       {modalState && teams && users && activities && tags && (
         <CalendarEventModal
-          projectId={project.id}
+          projectId={projectId}
           event={modalState.event}
           defaultDate={modalState.defaultDate}
           teams={teams}

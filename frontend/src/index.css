@@ -27,6 +27,15 @@
   --color-badge-warning-text: #9a5a10;
   --color-badge-danger-bg: #fbdada;
   --color-badge-danger-text: #a3221b;
+  /* Annual wheel activity-slice palette — cycles across activities purely
+     to tell adjacent slices apart, so it deliberately avoids blue/green/
+     orange/red (already the non-gray ACTIVITY_STATUS_COLORS in
+     AnnualWheel.tsx). Fixed across light/dark rather than re-themed, same
+     as the wheel's other decorative colors. An organization can override
+     this pair in its own theme file (see vortex.css) to better match its
+     brand, as long as the replacement keeps clear of those four hues. */
+  --color-wheel-slice-1: #8172b2;
+  --color-wheel-slice-2: #ccb974;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
@@ -1529,6 +1538,162 @@ button.project-selector__item:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
+}
+
+.annual-wheel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.annual-wheel__toolbar {
+  display: flex;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+.annual-wheel__activity-slice {
+  stroke: var(--color-surface);
+  stroke-width: 1;
+}
+
+.annual-wheel__no-activity {
+  fill: url(#annual-wheel-empty-pattern);
+  stroke: var(--color-surface);
+  stroke-width: 1;
+}
+
+.annual-wheel__no-activity-pattern-bg {
+  fill: var(--color-surface);
+}
+
+.annual-wheel__no-activity-pattern-line {
+  stroke: var(--color-border-subtle);
+  stroke-width: 3;
+}
+
+.annual-wheel__legend-swatch--pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-border-subtle) 0,
+    var(--color-border-subtle) 1.5px,
+    transparent 1.5px,
+    transparent 5px
+  );
+  background-color: var(--color-surface);
+}
+
+.annual-wheel__hub {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+.annual-wheel svg {
+  width: 100%;
+  /* Matches the SVG's viewBox width (WIDTH + 2*LABEL_CANVAS_PAD in
+     AnnualWheel.tsx) so the wheel isn't stretched larger than intended. */
+  max-width: 1440px;
+  height: auto;
+}
+
+.annual-wheel__ring {
+  fill: var(--color-surface);
+  stroke: var(--color-border-subtle);
+  stroke-width: 1.5;
+}
+
+.annual-wheel__month-tick {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.annual-wheel__month-label {
+  fill: var(--color-text-muted);
+  font-size: 13px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.annual-wheel__label-group--clickable {
+  cursor: pointer;
+}
+
+.annual-wheel__marker {
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+}
+
+.annual-wheel__leader {
+  fill: none;
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.annual-wheel__label-text {
+  font-size: 12px;
+  fill: var(--color-text);
+  dominant-baseline: middle;
+}
+
+.annual-wheel__label-text-detail {
+  fill: var(--color-text-muted);
+}
+
+.annual-wheel__label-group--clickable:hover .annual-wheel__leader {
+  opacity: 1;
+}
+
+.annual-wheel__label-group--clickable:hover .annual-wheel__label-text {
+  fill: var(--color-accent);
+  font-weight: 600;
+}
+
+.annual-wheel__today-marker {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+}
+
+.annual-wheel__today-label {
+  fill: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.annual-wheel__legend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 1000px;
+}
+
+.annual-wheel__legend-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.annual-wheel__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.annual-wheel__legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.annual-wheel__legend-swatch--square {
+  border-radius: 2px;
 }
 
 .year-grid__month {

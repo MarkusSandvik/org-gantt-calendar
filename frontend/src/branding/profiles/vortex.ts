@@ -7,6 +7,7 @@ export const branding: BrandingConfig = {
   tagline: "Project Control",
   faviconHref: "/favicon.svg",
   logoHref: "/organizations/vortex/logo-text-light.svg",
+  iconHref: "/organizations/vortex/logo-icon.svg",
   defaultTheme: "dark",
   websiteUrl: "https://www.vortexntnu.no/",
   creditSuffix: "for Vortex NTNU",

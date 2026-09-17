@@ -173,6 +173,7 @@ export function CalendarWeekPage() {
           monthHref={`/${projectSlug}/calendar/month/${monday.getFullYear()}/${monday.getMonth() + 1}`}
           weekHref={`/${projectSlug}/calendar/week/${isoYear}/${isoWeek}`}
           yearHref={`/${projectSlug}/calendar/year/${monday.getFullYear()}`}
+          wheelHref={`/${projectSlug}/calendar/wheel`}
         />
         {canEdit && (
           <button

@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 
 interface CalendarViewSwitcherProps {
-  active: "month" | "week" | "year";
+  active: "month" | "week" | "year" | "wheel";
   monthHref: string;
   weekHref: string;
   yearHref: string;
+  wheelHref: string;
 }
 
 export function CalendarViewSwitcher({
@@ -12,6 +13,7 @@ export function CalendarViewSwitcher({
   monthHref,
   weekHref,
   yearHref,
+  wheelHref,
 }: CalendarViewSwitcherProps) {
   const navigate = useNavigate();
 
@@ -29,6 +31,9 @@ export function CalendarViewSwitcher({
       </button>
       <button type="button" className={btnClass("year")} onClick={() => navigate(yearHref)}>
         Year
+      </button>
+      <button type="button" className={btnClass("wheel")} onClick={() => navigate(wheelHref)}>
+        Wheel
       </button>
     </div>
   );
